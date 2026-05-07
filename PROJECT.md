@@ -180,7 +180,7 @@ throughout and manages both lift and controlled descent.
 
 ## Open questions
 
-- Retract mechanism: stepper + lead screw strongly indicated — to be decided via ADR
+- Retract mechanism: decided — see ADR-003
 - MCU platform: to be decided via ADR
 - Mounting: vertical linear slide + instrument cradle for scenario 2 — to be decided via ADR
 - Centre force sensor range: violin edge contact estimated 1–20 N — to confirm by measurement
@@ -190,6 +190,7 @@ throughout and manages both lift and controlled descent.
 **Decided** (see `docs/adr/`):
 - ADR-001: Load cell + HX711 for centre force measurement
 - ADR-002: Three-roller contact head — fixed centre + spring-loaded outer pair
+- ADR-003: Stepper + lead screw Dremel carriage within gravity-fed floating frame
 
 ## Key constraints (from manual jig)
 
