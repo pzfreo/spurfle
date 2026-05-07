@@ -181,7 +181,7 @@ throughout and manages both lift and controlled descent.
 ## Open questions
 
 - Retract mechanism: decided — see ADR-003
-- MCU platform: to be decided via ADR
+- MCU platform: decided — see ADR-004
 - Mounting: vertical linear slide + instrument cradle for scenario 2 — to be decided via ADR
 - Centre force sensor range: violin edge contact estimated 1–20 N — to confirm by measurement
 - Re-engagement countdown duration: 3–5 s suggested — to confirm with use
@@ -191,6 +191,7 @@ throughout and manages both lift and controlled descent.
 - ADR-001: Load cell + HX711 for centre force measurement
 - ADR-002: Three-roller contact head — fixed centre + spring-loaded outer pair
 - ADR-003: Stepper + lead screw Dremel carriage within gravity-fed floating frame
+- ADR-004: RP2040 (Raspberry Pi Pico) as MCU platform
 
 ## Key constraints (from manual jig)
 
