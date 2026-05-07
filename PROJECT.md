@@ -126,6 +126,44 @@ Contact point height must be set correctly for each instrument type. The needle
 roller geometry serves both; the 3mm violin overhang constrains the minimum
 usable roller diameter.
 
+## Operational scenarios
+
+The device must support two distinct working scenarios determined by where the
+maker is in the build process:
+
+### Scenario 1 — plate on table (before assembly)
+The top or back plate lies flat on the workbench before the body is assembled.
+The jig shoe sits directly on the plate surface at z=0. This is the same
+geometry as the manual jig. Gravity holds the shoe against the plate surface.
+
+### Scenario 2 — assembled body in a stand (after assembly)
+The assembled violin or viol is held horizontal in a cradle or stand above the
+bench. The jig must be positioned so the shoe is level with the plate surface
+of the elevated instrument.
+
+**Prior art — guitar binding jigs:** Guitar makers use a gravity-fed vertical
+linear slide for exactly this scenario. The jig hangs on the slide above the
+instrument cradle; gravity pulls the shoe down onto the plate surface; no
+manual height setting is required. The operator rotates the instrument in the
+cradle to feed the edge against the jig.
+
+Guitar binding jigs do not need a safety retract because the cut direction is
+parallel to the plate (into the side of the body), so the cutter cannot
+plough across the plate if the bearing slips. Violin and viol purfling cuts
+into the plate from above, making edge slip catastrophic — this is why the
+spurfle safety system is needed.
+
+**Mounting approach for both scenarios:** gravity does the height work.
+- Scenario 1: jig rests on plate surface by gravity
+- Scenario 2: jig on vertical linear slide above instrument cradle, gravity
+  pulls shoe onto plate surface
+
+**Implication for retract mechanism:** gravity holds the jig down in both
+scenarios. The retract mechanism must lift against gravity and must also
+*control the descent* during re-engagement — gravity cannot be allowed to
+bring the cutter down uncontrolled. The retract actuator holds position
+throughout and manages both lift and controlled descent.
+
 ## System layers
 
 | Layer | Description | Directory |
@@ -142,9 +180,9 @@ usable roller diameter.
 
 ## Open questions
 
-- Retract mechanism: servo, solenoid, or linear actuator? (speed vs. precision)
+- Retract mechanism: stepper + lead screw strongly indicated — to be decided via ADR
 - MCU platform: to be decided via ADR
-- Fixed mounting type: bench clamp, dedicated stand, or vacuum base?
+- Mounting: vertical linear slide + instrument cradle for scenario 2 — to be decided via ADR
 - Centre force sensor range: violin edge contact estimated 1–20 N — to confirm by measurement
 - Re-engagement countdown duration: 3–5 s suggested — to confirm with use
 - Centre roller OD: must fit between outer rollers within 20mm span
