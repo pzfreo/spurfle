@@ -65,17 +65,15 @@ travel with the frame on the linear slide.
   per microstep — far finer than needed, ensuring smooth motion
 - Cutting depth is now a firmware parameter, not a mechanical setting.
   Because the router bit can be inserted to varying depths in the Dremel
-  collet, z=0 (bit tip at shoe surface level) must be established by a
-  **tool-setter zeroing procedure** before each session:
-  1. Carriage homed to full retract position
-  2. Operator places a conductive calibration plate under the shoe (top
-     surface flush with shoe bottom = z=0 reference)
-  3. Firmware descends carriage slowly; electrical contact between bit tip
-     and plate closes a circuit detected by the MCU
-  4. MCU records that stepper position as z=0; carriage returns to retract
-  5. Operator removes calibration plate and places instrument
-  This is standard CNC tool-length-offset practice. Requires one pull-up
-  resistor and two wires (plate → MCU; Dremel collet → MCU).
+  collet, z=0 (bit tip at shoe surface level) must be established before
+  each session. For the prototype this is done manually — the operator
+  lowers the carriage until the bit tip is visually at shoe surface level
+  and sets that as z=0 via a button press or firmware command.
+- **Future enhancement (out of scope for prototype):** automated tool-setter
+  zeroing using a conductive calibration plate under the shoe and electrical
+  contact detection (standard CNC tool-length-offset practice). Two wires
+  and one pull-up resistor. Eliminates manual judgement and enables repeatable
+  depth presets.
 - Lead screw stroke: 10mm sufficient for retract clearance; a longer screw
   allows depth adjustment range as well
 - Spring selection must ensure positive downforce across the full weight
