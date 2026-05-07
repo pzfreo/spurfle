@@ -151,6 +151,7 @@ usable roller diameter.
 
 **Decided** (see `docs/adr/`):
 - ADR-001: Load cell + HX711 for centre force measurement
+- ADR-002: Three-roller contact head — fixed centre + spring-loaded outer pair
 
 ## Key constraints (from manual jig)
 
