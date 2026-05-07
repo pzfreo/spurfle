@@ -63,8 +63,19 @@ travel with the frame on the linear slide.
   Dremel on T8 lead screw) — NEMA 17 or smaller is adequate
 - T8 lead screw (8mm/rev) with NEMA 17 at 16x microstepping gives ~2.5μm
   per microstep — far finer than needed, ensuring smooth motion
-- Cutting depth is now a firmware parameter, not a mechanical setting;
-  a homing procedure is needed to establish a repeatable z=0 reference
+- Cutting depth is now a firmware parameter, not a mechanical setting.
+  Because the router bit can be inserted to varying depths in the Dremel
+  collet, z=0 (bit tip at shoe surface level) must be established by a
+  **tool-setter zeroing procedure** before each session:
+  1. Carriage homed to full retract position
+  2. Operator places a conductive calibration plate under the shoe (top
+     surface flush with shoe bottom = z=0 reference)
+  3. Firmware descends carriage slowly; electrical contact between bit tip
+     and plate closes a circuit detected by the MCU
+  4. MCU records that stepper position as z=0; carriage returns to retract
+  5. Operator removes calibration plate and places instrument
+  This is standard CNC tool-length-offset practice. Requires one pull-up
+  resistor and two wires (plate → MCU; Dremel collet → MCU).
 - Lead screw stroke: 10mm sufficient for retract clearance; a longer screw
   allows depth adjustment range as well
 - Spring selection must ensure positive downforce across the full weight
