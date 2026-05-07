@@ -82,12 +82,12 @@ Two independent systems sharing the same firmware:
 State: ARMED ←→ RETRACTED
 ```
 
-- **ARMED → RETRACTED**: centre force drops from GREEN into RED.
+- **ARMED → RETRACTED**: any of the three sensors enters RED.
   Cutter retracts immediately.
-- **RETRACTED → ARMED**: centre force returns to GREEN and holds for the
+- **RETRACTED → ARMED**: all three sensors return to GREEN and hold for the
   full countdown duration. Countdown provides auditory and visual warning
   so the operator can get both hands back on the instrument before the
-  cutter descends. If force drops below GREEN at any point during countdown,
+  cutter descends. If any sensor drops below GREEN during countdown,
   countdown resets.
 
 Force zones for centre sensor:
@@ -98,19 +98,22 @@ Force zones for centre sensor:
 | Warning | Yellow | Force reducing — operator should increase pressure |
 | Critical | Red | Contact unsafe — retract triggered |
 
-### Tangency guidance (outer displacement sensors)
-
-Guidance only — never triggers retract.
+### Tangency system (outer displacement sensors)
 
 The differential between left and right outer roller displacements indicates
-angular error. A two-LED display (one per outer roller) shows the operator
-which way to rotate the instrument to equalise contact:
+angular error. Each outer LED reports the magnitude of that differential:
 
-| Display | Meaning |
-|---------|---------|
-| Both same | Jig tangential — correct |
-| Left extended more | Rotate instrument clockwise |
-| Right extended more | Rotate instrument counter-clockwise |
+| Zone | Colour | Meaning | Action |
+|------|--------|---------|--------|
+| Good | Green | Displacements equal — jig tangential | Cut proceeds |
+| Warning | Yellow | Differential growing — jig drifting off-tangent | Operator rotates instrument |
+| Critical | Red | Differential too large — cut geometry unsafe | Cutter retracts |
+
+Which LED is more extended tells the operator which way to rotate the
+instrument to re-equalise. Retract is triggered if either outer LED enters RED.
+
+Re-engagement countdown only begins when **all three sensors** (centre force
+and both outer differentials) are back in GREEN.
 
 ## Target instruments
 
