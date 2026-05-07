@@ -53,7 +53,7 @@ Three needle rollers, ~4mm OD, spaced within a 20mm total outer-to-outer span:
 
 | Roller | Mounting | Sensor | Purpose |
 |--------|----------|--------|---------|
-| Centre | Fixed | Force (Wheatstone bridge / load cell) | Contact detection — sole retract trigger |
+| Centre | Fixed | Load cell + HX711 (see ADR-001) | Contact detection — sole retract trigger |
 | Outer left | Spring-loaded | Displacement (Hall effect) | Tangency guidance |
 | Outer right | Spring-loaded | Displacement (Hall effect) | Tangency guidance |
 
@@ -143,11 +143,14 @@ usable roller diameter.
 ## Open questions
 
 - Retract mechanism: servo, solenoid, or linear actuator? (speed vs. precision)
-- MCU platform: RP2040 preferred candidate — to be decided via ADR
+- MCU platform: to be decided via ADR
 - Fixed mounting type: bench clamp, dedicated stand, or vacuum base?
-- Centre force sensor range: violin edge contact estimated 1–20 N — to confirm
+- Centre force sensor range: violin edge contact estimated 1–20 N — to confirm by measurement
 - Re-engagement countdown duration: 3–5 s suggested — to confirm with use
 - Centre roller OD: must fit between outer rollers within 20mm span
+
+**Decided** (see `docs/adr/`):
+- ADR-001: Load cell + HX711 for centre force measurement
 
 ## Key constraints (from manual jig)
 
