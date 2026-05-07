@@ -10,7 +10,11 @@ At the start of every session, read:
 ## Physical constraint chains
 
 Physical designs have dependency chains that are easy to lose track of.
-The project treats parametric model assertions as a test suite:
+The project uses a three-layer approach (see `docs/constraint-modeling.md`):
+
+**Layer 1 — Parameter propagation:** Every dimension crossing a part boundary
+lives in one place. Both sides derive from it. The project treats parametric
+model assertions as a test suite:
 
 - Every derived dimension must be **calculated** from its source, never
   typed as a magic number
@@ -24,6 +28,17 @@ The project treats parametric model assertions as a test suite:
 - When a dimension is unknown, mark it TBD in `docs/CONSTRAINTS.md` with
   a placeholder assert `assert False, "C-NNN: TBD — <what needs deciding>"`
   so the model fails until the constraint is resolved
+
+**Layer 2 — Mating features as first-class objects:** When two parts mate
+(peg/hole, screw boss, threaded insert), define a shared object that generates
+both halves from a single spec. Neither side hardcodes the interface dimension.
+
+**Layer 3 — Manufacturability as types:** Wrap dimensions in types that carry
+their own constraints (minimum wall thickness, overhang angle, bridge span).
+Construction validates; an invalid feature cannot be built.
+
+For CI test categories (Hypothesis property-based testing, mesh sanity,
+kinematic sweeps, visual regression) see `docs/constraint-modeling.md`.
 
 ## Layer specs and code are coupled pairs
 
