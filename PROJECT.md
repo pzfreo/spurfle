@@ -1,5 +1,12 @@
 # Spurfle — Safe Purfling Device
 
+## What we're building
+
+A fixed jig that routes purfling channels around stringed-instrument tops and
+backs, replacing the hand-held manual approach with a device that senses edge
+contact and automatically retracts the cutter when contact is lost. Designed
+for both violin family (plate overhang edge) and viol da gamba (full rib edge).
+
 ## Problem statement
 
 Purfling is a decorative inlay channel routed around the perimeter of a
@@ -11,9 +18,10 @@ plate-to-shoe gap.
 The manual approach has two failure modes that can ruin months of work:
 
 **1. Edge slip — catastrophic overcut**
-If the bearing loses contact with the edge (e.g. the user slips or lifts the
-jig), the cutter no longer has a distance reference and ploughs straight through
-the top or back. There is no recovery from a deep overcut across the plate.
+If the bearing loses contact with the edge (e.g. the operator slips or the jig
+lifts), the cutter no longer has a distance reference and ploughs straight
+through the top or back. There is no recovery from a deep overcut across the
+plate.
 
 **2. Tangency error — inconsistent channel width**
 The bearing follower only maintains correct distance when the jig is held
@@ -21,152 +29,125 @@ tangential to the edge curve. If the jig rotates off-tangent (common on tight
 curves such as the waist or bouts), the effective cutter-to-edge distance
 varies, producing a ragged or wavy purfling line.
 
-## Proposed solutions
+## Solution overview
 
-### Problem 1 fix — fixed jig with force-monitored edge contact
+**Invert the relationship between jig and instrument.** Instead of the operator
+moving the jig along a held violin, the **jig is fixed** and the operator feeds
+the **violin edge against it**. The jig senses edge contact continuously and
+retracts the cutter automatically if contact is lost.
 
-Invert the relationship between jig and instrument: instead of the operator
-moving the jig along a held violin, the **jig is fixed** and the operator
-feeds the **violin edge against it**.
+Tangency is monitored by a three-roller contact head. The operator receives
+real-time visual feedback and corrects angle by rotating the instrument.
 
-A force sensor measures the contact force between the violin edge and the
-bearing follower. While force is above a threshold, the system knows the edge
-is in contact and cutting can proceed. As soon as force drops below the
-threshold — indicating the edge may be slipping away — the firmware retracts
-the cutter upward (away from the work surface) before the edge actually
-loses contact.
+## Contact head design
 
-Key properties of this approach:
-- **Safety guarantee from physics**: while contact force is present, the
-  bearing is against the edge, geometry is correct, and slippage cannot
-  occur. No slippage is possible without force first reducing.
-- Retract is triggered by **force starting to drop** (onset of reduction,
-  not zero crossing). This gives the full duration of the force-reduction
-  curve — the time it takes the violin edge to physically move away — to
-  complete the retract. Retract speed does not need to be extreme.
-- **False positives are acceptable**: if the cutter retracts when it didn't
-  need to (e.g. momentary light pressure at a curve), the operator simply
-  re-engages by pressing the violin back against the bearing. Re-engagement
-  must be easy and fast by design.
-- The fixed mounting means the operator's hands control only the violin,
-  not the jig — simpler motor task, less chance of jig movement
-- The bearing follower still provides the lateral distance reference
+Three needle rollers, ~4mm OD, spaced within a 20mm total outer-to-outer span:
 
-Control logic:
-- State: ARMED (cutter at depth) / RETRACTED (cutter raised)
-- Each contact point independently reports: GREEN / YELLOW / RED
-- Transition ARMED→RETRACTED: either contact point enters RED
-- Transition RETRACTED→ARMED: both contact points return to GREEN, triggering
-  a timed countdown with auditory and visual warning before cutter descends.
-  Both hands are on the violin during cutting, so re-engagement is automatic
-  but deliberately delayed. If either contact point drops below GREEN during
-  countdown, countdown resets.
+```
+   outer-L    centre    outer-R
+      O    |    O    |    O
+   spring  |  fixed  |  spring
+   + disp  | + force |  + disp
+   sensor  |  sensor |  sensor
+```
 
-Open questions for this sub-system:
-- What force range and resolution is needed? (violin edge contact is light —
-  likely 1–20 N range)
-- Rate-of-change trigger vs. absolute threshold — or both?
-- What is the fixed mounting — bench clamp, dedicated stand, vacuum base?
+| Roller | Mounting | Sensor | Purpose |
+|--------|----------|--------|---------|
+| Centre | Fixed | Force (Wheatstone bridge / load cell) | Contact detection — sole retract trigger |
+| Outer left | Spring-loaded | Displacement (Hall effect) | Tangency guidance |
+| Outer right | Spring-loaded | Displacement (Hall effect) | Tangency guidance |
 
-### Problem 2 fix — dual-contact tangency sensing
+**Why needle rollers:** Ball plungers are unreliable against the thin (~3mm)
+violin overhang edge — insufficient surface height to retain the ball. Needle
+rollers constrained in slots track both the 3mm violin overhang and the full
+viol da gamba rib reliably.
 
-Replace the single bearing follower with two bearing contact points spaced
-closely together along the direction of travel. Both contact points measure
-force independently.
+**Why separate sensor types:** The outer rollers move naturally with convex and
+concave curves (sagitta variation ~3mm spring travel required across the full
+violin body outline). Their position cannot be used to infer whether the centre
+roller is in contact — that requires an independent force sensor on the centre.
 
-**Geometry:** When both points register equal (or near-equal) force, the line
-between them is tangential to the edge curve, the cutter is perpendicular to
-the edge, and the cutter-to-edge distance is the designed nominal value
-(maximum correct distance). When the jig is off-tangent, one contact point
-carries more load than the other and/or the cutter is no longer perpendicular
-— the effective cutter-to-edge distance reduces, producing an inconsistent
-channel.
+**Sagitta note:** At 10mm from centre to each outer roller, the spring travel
+needed to follow the full range of violin curvature (convex bouts R≈100mm to
+concave waist R≈25mm) is approximately 2.6mm. Springs must accommodate this
+without bottoming out or losing preload.
 
-**Sensing:** Each contact point has its own three-zone LED indicator:
+## Control logic
 
-| Zone | Colour | Meaning | Action |
-|------|--------|---------|--------|
-| Good | Green | Force sufficient, contact confirmed | Cut proceeds |
-| Warning | Yellow | Force dropping, still acceptable | Operator increases pressure |
-| Critical | Red | Force below safe threshold | Cutter retracts automatically |
+Two independent systems sharing the same firmware:
 
-Two LEDs side by side (one per contact point) serve dual purpose:
-- **Slip detection**: both LEDs showing green means safe to cut
-- **Tangency guidance**: imbalance between the two LEDs tells the operator
-  which way to rotate the violin to re-equalise contact force
+### Safety system (centre force sensor)
 
-**Three-contact geometry:** A single fixed centre bearing sets the
-cutter-to-edge distance (no sagitta error). Two spring-loaded outer contacts
-flanking it, ≤20mm total outer-to-outer span, sense force balance for
-tangency. The outer contacts do not need to be rolling bearings — spring-loaded
-ball plungers (2–4mm ball tip) are preferred for violin work where the contact
-surface is only ~3mm tall. The spring preload defines the green/yellow threshold
-naturally.
+```
+State: ARMED ←→ RETRACTED
+```
 
-**Spacing trade-off:** Outer contacts closer together work on tighter curves
-(violin waist radius ~20–30mm) but give a weaker differential signal. At 20mm
-total span the sagitta difference between convex bouts (~100mm R) and concave
-waist (~25mm R) is ~0.9mm at the outer contacts — acceptable since these are
-sensing-only, not distance-reference points.
+- **ARMED → RETRACTED**: centre force drops from GREEN into RED.
+  Cutter retracts immediately.
+- **RETRACTED → ARMED**: centre force returns to GREEN and holds for the
+  full countdown duration. Countdown provides auditory and visual warning
+  so the operator can get both hands back on the instrument before the
+  cutter descends. If force drops below GREEN at any point during countdown,
+  countdown resets.
 
-**Shared infrastructure:** The same force sensors used for slip detection
-(Problem 1) double as the tangency sensors — two sensors, two problems solved.
+Force zones for centre sensor:
 
-Open questions:
-- Optimal spacing between contact points (to be derived from violin geometry)
-- Whether tangency error triggers retract, or only provides a guidance signal
-  to the operator
+| Zone | Colour | Meaning |
+|------|--------|---------|
+| Good | Green | Contact confirmed — cut proceeds |
+| Warning | Yellow | Force reducing — operator should increase pressure |
+| Critical | Red | Contact unsafe — retract triggered |
 
-## What we're building
+### Tangency guidance (outer displacement sensors)
 
-A purfling router system that addresses both failure modes by adding sensing and
-automatic control to the existing mechanical design.
+Guidance only — never triggers retract.
+
+The differential between left and right outer roller displacements indicates
+angular error. A two-LED display (one per outer roller) shows the operator
+which way to rotate the instrument to equalise contact:
+
+| Display | Meaning |
+|---------|---------|
+| Both same | Jig tangential — correct |
+| Left extended more | Rotate instrument clockwise |
+| Right extended more | Rotate instrument counter-clockwise |
+
+## Target instruments
+
+| Instrument | Edge type | Contact height |
+|------------|-----------|----------------|
+| Violin / viola | Plate overhang | ~3mm |
+| Viol da gamba | Full rib, no overhang | ~50–60mm |
+
+Contact point height must be set correctly for each instrument type. The needle
+roller geometry serves both; the 3mm violin overhang constrains the minimum
+usable roller diameter.
 
 ## System layers
 
 | Layer | Description | Directory |
 |-------|-------------|-----------|
-| Manual jig | 3D-printed purfling router (as-built, no electronics) | `manual/` |
-| Sensing | Force/load measurement on cutter | `sensing/` |
-| Actuation | Motorised retract mechanism | `actuation/` |
-| Electronics | PCB / circuit for sensor + actuator drive | `electronics/` |
-| Firmware | MCU code for force reading and retract control | `firmware/` |
-| Control | Control law, tuning, calibration | `firmware/control/` |
+| Manual jig | 3D-printed purfling router (baseline, no electronics) | `manual/` |
+| Mechanics | Contact head, retract mechanism, fixed mounting | `mechanics/` |
+| Electronics | PCB / circuit for sensors and actuator drive | `electronics/` |
+| Firmware | MCU code: force reading, retract control, LED display | `firmware/` |
 
 ## Current state
 
 - `manual/` — copied from purfel repo (working mechanical design)
-- All other layers: not yet started
+- All other layers: design phase, not yet started
 
 ## Open questions
 
-- Retract mechanism: servo, stepper, or linear actuator?
-- Sensor type: load cell (Wheatstone bridge), FSR, strain gauge on flexure?
-- MCU platform: Arduino, RP2040, ESP32?
-- Is retract a separate Z-axis or does it pivot the whole jig?
-
-## Target instruments and edge geometry
-
-The device must handle two distinct edge contact scenarios:
-
-| Instrument | Edge type | Contact height | Notes |
-|------------|-----------|----------------|-------|
-| Violin / viola | Plate overhang | ~3mm | Top/back plate overhangs the rib. Contact is against the thin plate edge, not the rib. Well-defined, consistent reference surface. |
-| Viol da gamba | Full rib, no overhang | ~50–60mm | Contact is directly against the rib. Larger contact area but bearing can ride at any height, requiring careful height-setting to avoid tilt error. |
-
-**Implications for contact point design:**
-- Ball plungers (spherical tip, 2–4mm ball) work for both instrument types.
-  Point contact seats naturally against whatever surface it encounters —
-  a 3mm violin overhang edge or a full viol rib with height variation.
-  Cylindrical rollers or needle bearings have line contact and are unreliable
-  against any height variation in the edgework.
-- Contact point height must still be set correctly for each instrument type,
-  but the same ball plunger contact geometry serves both.
-- The centre bearing (distance reference) faces the same constraint.
+- Retract mechanism: servo, solenoid, or linear actuator? (speed vs. precision)
+- MCU platform: RP2040 preferred candidate — to be decided via ADR
+- Fixed mounting type: bench clamp, dedicated stand, or vacuum base?
+- Centre force sensor range: violin edge contact estimated 1–20 N — to confirm
+- Re-engagement countdown duration: 3–5 s suggested — to confirm with use
+- Centre roller OD: must fit between outer rollers within 20mm span
 
 ## Key constraints (from manual jig)
 
 - Dremel 3/4"-12 UN thread mount
-- 608 bearing edge follower (Ø22 OD)
-- M6 bolt clamping at fixed standoff height
 - Shoe sits flat on work at z=0
+- Cutter depth set by plate-to-shoe gap
