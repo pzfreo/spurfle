@@ -155,13 +155,14 @@ The device must handle two distinct edge contact scenarios:
 | Viol da gamba | Full rib, no overhang | ~50–60mm | Contact is directly against the rib. Larger contact area but bearing can ride at any height, requiring careful height-setting to avoid tilt error. |
 
 **Implications for contact point design:**
-- The 3mm violin overhang requires very small contact geometry — a ball plunger
-  (spherical tip, 2–4mm ball) is ideal as it makes point contact against the
-  thin edge regardless of height variation
-- Needle rollers or conventional small bearings suit viol rib contact
-- Contact point height must be adjustable or the device must have two
-  interchangeable contact head configurations (one per instrument type)
-- The centre bearing (distance reference) faces the same constraint
+- Ball plungers (spherical tip, 2–4mm ball) work for both instrument types.
+  Point contact seats naturally against whatever surface it encounters —
+  a 3mm violin overhang edge or a full viol rib with height variation.
+  Cylindrical rollers or needle bearings have line contact and are unreliable
+  against any height variation in the edgework.
+- Contact point height must still be set correctly for each instrument type,
+  but the same ball plunger contact geometry serves both.
+- The centre bearing (distance reference) faces the same constraint.
 
 ## Key constraints (from manual jig)
 
