@@ -95,11 +95,19 @@ Two LEDs side by side (one per contact point) serve dual purpose:
 - **Tangency guidance**: imbalance between the two LEDs tells the operator
   which way to rotate the violin to re-equalise contact force
 
-**Spacing trade-off:** Contact points closer together work on tighter curves
-(violin waist radius ~20–30 mm) but are less sensitive to small angular
-errors. Points further apart give a stronger differential signal but may
-fail to both contact simultaneously on the tightest curves. Spacing must be
-chosen to work across the full range of violin body curvature.
+**Three-contact geometry:** A single fixed centre bearing sets the
+cutter-to-edge distance (no sagitta error). Two spring-loaded outer contacts
+flanking it, ≤20mm total outer-to-outer span, sense force balance for
+tangency. The outer contacts do not need to be rolling bearings — spring-loaded
+ball plungers (2–4mm ball tip) are preferred for violin work where the contact
+surface is only ~3mm tall. The spring preload defines the green/yellow threshold
+naturally.
+
+**Spacing trade-off:** Outer contacts closer together work on tighter curves
+(violin waist radius ~20–30mm) but give a weaker differential signal. At 20mm
+total span the sagitta difference between convex bouts (~100mm R) and concave
+waist (~25mm R) is ~0.9mm at the outer contacts — acceptable since these are
+sensing-only, not distance-reference points.
 
 **Shared infrastructure:** The same force sensors used for slip detection
 (Problem 1) double as the tangency sensors — two sensors, two problems solved.
@@ -136,6 +144,24 @@ automatic control to the existing mechanical design.
 - Sensor type: load cell (Wheatstone bridge), FSR, strain gauge on flexure?
 - MCU platform: Arduino, RP2040, ESP32?
 - Is retract a separate Z-axis or does it pivot the whole jig?
+
+## Target instruments and edge geometry
+
+The device must handle two distinct edge contact scenarios:
+
+| Instrument | Edge type | Contact height | Notes |
+|------------|-----------|----------------|-------|
+| Violin / viola | Plate overhang | ~3mm | Top/back plate overhangs the rib. Contact is against the thin plate edge, not the rib. Well-defined, consistent reference surface. |
+| Viol da gamba | Full rib, no overhang | ~50–60mm | Contact is directly against the rib. Larger contact area but bearing can ride at any height, requiring careful height-setting to avoid tilt error. |
+
+**Implications for contact point design:**
+- The 3mm violin overhang requires very small contact geometry — a ball plunger
+  (spherical tip, 2–4mm ball) is ideal as it makes point contact against the
+  thin edge regardless of height variation
+- Needle rollers or conventional small bearings suit viol rib contact
+- Contact point height must be adjustable or the device must have two
+  interchangeable contact head configurations (one per instrument type)
+- The centre bearing (distance reference) faces the same constraint
 
 ## Key constraints (from manual jig)
 
