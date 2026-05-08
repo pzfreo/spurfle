@@ -45,7 +45,9 @@ HOLDER_R       = HOLDER_OD / 2
 LOWER_EXTEND   = 20.0         # mm — lower plate body length beyond pin centre
 UPPER_EXTEND   = 10.0         # mm — upper plate body length beyond pin centre (TBD: issue #11)
 HOLDER_T       = 3.5          # mm — plate thickness; mid of 3–4mm range (C-012)
-POCKET_DEPTH   = 2.0          # mm — blind bore depth; axle captive by geometry
+POCKET_DEPTH           = 2.0   # mm — blind bore depth; axle captive by geometry
+ROLLER_AXIAL_CLEARANCE = 0.2   # mm — total axial play (0.1mm each end); roller spins freely
+ROLLER_H_PRINT         = ROLLER_H - ROLLER_AXIAL_CLEARANCE  # 9.8mm printed height
 
 # Vertical wall: rises from lower plate behind the roller to support upper plate
 WALL_CLEARANCE = 0.5          # mm — gap between wall inner face and roller surface
@@ -64,6 +66,8 @@ assert POCKET_DEPTH < HOLDER_T, (
 assert ROLLER_H >= 3.0, (
     f"Roller height {ROLLER_H}mm must clear violin plate overhang (3mm minimum)"
 )
+assert ROLLER_AXIAL_CLEARANCE > 0, "Roller needs axial clearance to spin"
+assert ROLLER_AXIAL_CLEARANCE < POCKET_DEPTH, "Clearance must not exceed pocket depth"
 assert WALL_START_X > ROLLER_R, (
     "Vertical wall inner face intersects roller"
 )
@@ -78,9 +82,14 @@ OUT = Path(__file__).parent / "out"
 
 
 def build_roller():
-    """Nylon roller — cylindrical with running-fit axle bore."""
-    body = Cylinder(ROLLER_R, ROLLER_H)
-    body -= Cylinder(PIN_BORE / 2, ROLLER_H + 0.2)
+    """Nylon roller — cylindrical with running-fit axle bore.
+
+    Printed height is ROLLER_H_PRINT (9.8mm), 0.1mm shorter than the plate
+    gap each end so the roller spins freely without being clamped.
+    Centered at Z=0 in the assembly.
+    """
+    body = Cylinder(ROLLER_R, ROLLER_H_PRINT)
+    body -= Cylinder(PIN_BORE / 2, ROLLER_H_PRINT + 0.2)
     return body
 
 
