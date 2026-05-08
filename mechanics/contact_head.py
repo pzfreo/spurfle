@@ -67,6 +67,7 @@ HOLDER_T               = 4.5   # mm — plate thickness (C-012: min 3mm; C-013: 
 POCKET_DEPTH           = 3.0   # mm — blind bore depth each plate (C-013); 18mm pin = 2×3 + 12
 ROLLER_TO_WALL_GAP     = 1.0   # mm — radial gap, roller OD to vertical wall (C-014)
 ROLLER_AXIAL_CLEARANCE = 0.2   # mm — total axial play; 0.1mm each end
+WALL_W                 = 8.0   # mm — vertical wall width (Y) behind roller; wider than holder for M3 boss
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Derived dimensions — calculated, never typed
@@ -192,7 +193,7 @@ def build_lower_plate():
     beyond the roller surface. Top face flush with UPPER_Z (upper plate
     bottom), providing direct support.
     """
-    # ── Horizontal base ───────────────────────────────────────────────────────
+    # ── Horizontal base — narrow front (pin bore area) ───────────────────────
     with BuildSketch() as sk:
         with Locations((LOWER_EXTEND / 2, 0)):
             SlotOverall(LOWER_EXTEND + HOLDER_OD, HOLDER_OD)
@@ -202,16 +203,27 @@ def build_lower_plate():
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
 
+    # ── Horizontal base — wide back section (behind roller) ──────────────────
+    # Extra 0.1mm height ensures overlap with wall_box for a clean boolean union
+    horiz_wide = Pos(WALL_START_X, 0, 0) * Box(
+        LOWER_EXTEND - WALL_START_X, WALL_W, HOLDER_T + 0.1,
+        align=(Align.MIN, Align.CENTER, Align.MIN),
+    )
+    horiz_wide_cap = Pos(LOWER_EXTEND, 0, 0) * Cylinder(
+        WALL_W / 2, HOLDER_T + 0.1,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+
     # ── Vertical wall ─────────────────────────────────────────────────────────
     wall_box = Pos(WALL_START_X, 0, HOLDER_T) * Box(
-        LOWER_EXTEND - WALL_START_X, HOLDER_OD, ROLLER_H,
+        LOWER_EXTEND - WALL_START_X, WALL_W, ROLLER_H,
         align=(Align.MIN, Align.CENTER, Align.MIN),
     )
     wall_cap = Pos(LOWER_EXTEND, 0, HOLDER_T) * Cylinder(
-        HOLDER_R, ROLLER_H,
+        WALL_W / 2, ROLLER_H,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
-    return horiz + wall_box + wall_cap
+    return horiz + horiz_wide + horiz_wide_cap + wall_box + wall_cap
 
 
 def build_upper_plate():
@@ -220,6 +232,7 @@ def build_upper_plate():
     Blind axle bore from inner (bottom) face. Far end rests on the lower
     plate's vertical wall. Attachment method TBD pending housing design.
     """
+    # Narrow front (pin bore area)
     with BuildSketch() as sk:
         with Locations((UPPER_EXTEND / 2, 0)):
             SlotOverall(UPPER_EXTEND + HOLDER_OD, HOLDER_OD)
@@ -228,7 +241,16 @@ def build_upper_plate():
         PIN_BORE / 2, POCKET_DEPTH + 0.1,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
-    return plate
+    # Wide back section (behind roller)
+    plate_wide = Pos(WALL_START_X, 0, 0) * Box(
+        UPPER_EXTEND - WALL_START_X, WALL_W, HOLDER_T,
+        align=(Align.MIN, Align.CENTER, Align.MIN),
+    )
+    plate_wide_cap = Pos(UPPER_EXTEND, 0, 0) * Cylinder(
+        WALL_W / 2, HOLDER_T,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+    return plate + plate_wide + plate_wide_cap
 
 
 def main():
