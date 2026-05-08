@@ -175,8 +175,64 @@ throughout and manages both lift and controlled descent.
 
 ## Current state
 
-- `manual/` — copied from purfel repo (working mechanical design)
+- `manual/` — copied from purfel repo (working mechanical design, previous iteration)
 - All other layers: design phase, not yet started
+
+## Prototype phases
+
+Development is split into four phases, each independently testable:
+
+### Phase 1 — Force sensing and feedback (no retraction, no tangency)
+
+**Goal:** validate that an operator can manoeuvre a real instrument around a
+fixed contact point while maintaining appropriate force, and characterise what
+the signal looks like when they can't.
+
+**Why this first:** the core safety interaction has never been tested. Without
+real data on contact force range, signal noise, and operator behaviour during
+edge loss, every subsequent design decision is speculation. The presence of
+LED/buzzer feedback is deliberate — each contact-loss event becomes a
+measurable data point that will set the retract latency requirement.
+
+**Minimum rig:**
+- Centre roller on a fixed post at instrument-edge height
+- Load cell + HX711 + RP2040
+- Three LEDs (green / yellow / red) for force zone display
+- Buzzer for audible contact-loss alert
+- No housing required — benchtop assembly
+
+**Questions this phase answers:**
+- What is the actual contact force range during normal use?
+- How much signal noise comes from vibration and edge slip?
+- Can the operator maintain contact through tight curves (waist, bouts)?
+- How quickly does the operator respond to a feedback signal?
+- What retract latency is required for the cutter not to overrun?
+- Is visual feedback (LED) sufficient, or is audio (buzzer) essential?
+
+### Phase 2 — Tangency sensing and display
+
+Adds the outer roller pair (spring-loaded, Hall effect displacement sensors)
+and the differential tangency display. Builds on the Phase 1 rig.
+
+**Questions this phase answers:**
+- Does differential displacement reliably indicate jig angle?
+- What threshold separates "drifting" from "unsafe"?
+- Can the operator use the feedback to correct angle in real time?
+
+### Phase 3 — Retraction
+
+Adds the stepper + lead screw Dremel carriage and the full safety state machine
+(ARMED ↔ RETRACTED, countdown, re-engagement). Integrates with Phase 1 and 2
+sensing.
+
+**Latency requirement** (to be determined from Phase 1 data) drives stepper
+speed and lead screw pitch selection.
+
+### Phase 4 — Linear slide and height adjustment
+
+Adds the vertical linear slide and instrument cradle for Scenario 2 (assembled
+body in a stand). Can be developed in parallel with Phase 3 once Phase 1 has
+validated the sensing geometry.
 
 ## Open questions
 
