@@ -75,7 +75,12 @@ Pressure point capsule rejected: minimum range 300 kg, entirely unsuitable.
 - Roller holder bears directly on the flat face of the load cell — housing
   pocket must locate the cell so force is applied perpendicular to the face
 - HX711 breakout requires 4 signal lines to MCU (VCC, GND, DATA, CLK)
-- 350 Ω bridge at 5 V draws ~14 mA — within HX711 AVDD supply capability
+- Board runs at 3.3 V from Pico VOUT (RP2040 is 3.3 V, ADR-004). HX711
+  minimum is 2.6 V so 3.3 V is within spec. DATA output is 3.3 V logic —
+  no level shifting required. Bridge excitation = 3.3 V gives 6.6 mV
+  full-scale output (2.0 mV/V × 3.3 V); gain 128 input range is ±20 mV,
+  so full scale fits comfortably.
+- 350 Ω bridge at 3.3 V draws ~9 mA — within HX711 AVDD supply capability
 - Calibration procedure required at first setup to establish N→ADC mapping
   and set GREEN/YELLOW/RED thresholds
 - Safety overload is 15 N — shock loads from accidental knock must be
