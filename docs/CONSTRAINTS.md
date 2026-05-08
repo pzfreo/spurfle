@@ -67,16 +67,23 @@ Touch-point span (decided): 20mm between outer roller touch points.
 Roller axis is **vertical**; OD is in the horizontal plane; roller height is
 the axial (vertical) dimension that spans the instrument edge profile.
 
-The outer roller centres sit at ±(span/2) = ±10mm from the centre roller.
-Gap between adjacent roller bodies:
+The span is built up as:
+
+```
+span = 2 × (roller_OD + gap)
+```
+
+Each side contributes one full roller diameter (centre roller radius + outer
+roller radius) plus one gap. Rearranging:
 
 ```
 gap = span/2 − roller_OD = 10 − 7 = 3 mm
 ```
 
 - **Constraint:** gap ≥ 1mm (minimum clearance between roller bodies)
-- **Drives:** maximum roller OD for a given span: OD_max = span/2 − 1 = 9mm
-- **Status:** satisfied — 7mm OD gives 3mm gap ✓
+- **Drives:** for a fixed span, max roller OD = span/2 − 1 = 9mm;
+  for a fixed roller OD, min span = 2 × (roller_OD + 1) = 16mm
+- **Status:** satisfied — 7mm OD, 20mm span gives 3mm gap ✓
 - **Code:** assert in `mechanics/contact_head.py`
 
   ```python
