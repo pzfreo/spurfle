@@ -35,10 +35,14 @@ satisfied.
 ## Contact head constraints
 
 ### C-001 — Sensor depth behind centre roller
-- **Source:** load cell body depth + HX711 breakout depth + mounting clearance
-- **Drives:** minimum shoe wall thickness behind centre roller
-- **Status:** sensor not yet selected — TBD when load cell is chosen
-- **Code:** `mechanics/contact_head.py` — `CENTRE_SENSOR_DEPTH`, `SHOE_WALL_MIN`
+- **Source:** Galoce flat capsule load cell (ADR-001): 9 mm body depth in
+  force direction + mounting clearance
+- **Drives:** minimum housing wall depth behind centre roller =
+  `CENTRE_SENSOR_DEPTH` + clearance (TBD when housing is modelled)
+- **Decided:** `CENTRE_SENSOR_DEPTH = 9.0 mm`, load cell footprint ø13 mm
+- **Status:** load cell ordered (2026-05-08); housing model TBD
+- **Code:** `mechanics/contact_head.py` — `CENTRE_SENSOR_DEPTH` (constant);
+  housing depth assertion deferred to housing model
 
 ### C-002 — Sensor depth behind outer rollers
 - **Source:** Hall effect sensor body depth + magnet clearance + mounting
