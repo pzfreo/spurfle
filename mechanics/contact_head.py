@@ -57,14 +57,14 @@ CENTRE_SENSOR_OD      = 13.0  # mm — load cell body diameter (C-001)
 # Free parameters — adjust these to change the design
 # ══════════════════════════════════════════════════════════════════════════════
 
-ROLLER_OD              = 7.0   # mm — nylon FDM; contacts instrument edge
-ROLLER_H               = 10.0  # mm — nominal plate-to-plate gap (roller printed shorter)
-PIN_D                  = 1.5   # mm — steel axle diameter
-HOLDER_OD              = 4.5   # mm — holder stadium OD at pin bore end (C-011)
+ROLLER_OD              = 8.0   # mm — nylon FDM; contacts instrument edge
+ROLLER_H               = 12.0  # mm — nominal plate-to-plate gap (roller printed shorter)
+PIN_D                  = 2.0   # mm — steel axle diameter; standard pin 18mm long
+HOLDER_OD              = 5.0   # mm — holder stadium OD at pin bore end (C-011)
 LOWER_EXTEND           = 20.0  # mm — lower plate body length beyond pin centre
 UPPER_EXTEND           = 10.0  # mm — upper plate body length beyond pin centre
-HOLDER_T               = 3.5   # mm — plate thickness (C-012: min 3mm)
-POCKET_DEPTH           = 2.0   # mm — blind bore depth each plate (C-013)
+HOLDER_T               = 4.5   # mm — plate thickness (C-012: min 3mm; C-013: pocket needs 1.2mm wall)
+POCKET_DEPTH           = 3.0   # mm — blind bore depth each plate (C-013); 18mm pin = 2×3 + 12
 ROLLER_TO_WALL_GAP     = 1.0   # mm — radial gap, roller OD to vertical wall (C-014)
 ROLLER_AXIAL_CLEARANCE = 0.2   # mm — total axial play; 0.1mm each end
 
