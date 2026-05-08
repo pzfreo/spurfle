@@ -222,6 +222,35 @@ the stepper architecture is viable. If the window is ~50ms or less, a different
 mechanism (pre-loaded spring release, solenoid) will be needed and the ADR-003
 decision must be revisited.
 
+**Test scenarios to log:**
+
+Three distinct release scenarios produce different force profiles and must be
+tested separately:
+
+1. **Slow release** — operator deliberately and gradually reduces pressure.
+   Tests whether the yellow warning zone provides meaningful reaction time.
+
+2. **Quick pull** — operator pulls the instrument away sharply.
+   Worst-case detection latency; force is approximately a step function.
+
+3. **Spring release** — operator relaxes grip and lets the outer springs eject
+   the instrument. Most realistic "I lost my grip" scenario. Requires the outer
+   spring mechanism to be mocked up in Phase 1 (springs + rollers, Hall effect
+   sensors optional).
+
+**Note on spring dynamics:** The spring-loaded outer rollers are not only
+tangency sensors — they actively push the instrument away from the jig when
+grip is released. This spring-assisted departure may produce a sharper force
+edge at the centre sensor than free motion alone, which is beneficial for
+detection. It also means departure speed is faster than intuition suggests.
+If the outer springs are included in Phase 1, their displacement (measured via
+Hall effect or inferred from the force curve) gives instrument departure
+velocity directly without needing an accelerometer.
+
+Log the full force curve at maximum HX711 sample rate (~80 SPS), not just
+threshold-crossing timestamps, so departure profiles can be reconstructed and
+compared across scenarios.
+
 ### Phase 2 — Tangency sensing and display
 
 Adds the outer roller pair (spring-loaded, Hall effect displacement sensors)
