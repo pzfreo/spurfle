@@ -18,20 +18,40 @@ pair — update both in the same commit.
 
 ## Holder design
 
-Two stadium-shaped ASA printed end pieces, one above and one below the roller.
-Each piece has a 1.5mm bore at the centre of the semicircular end to accept
-the pin. The two pieces are held apart at the correct roller height.
+Two ASA printed plates: a **lower plate** (L-shaped bracket, the main structure)
+and an **upper plate** (short removable cap). The roller and axle sit between them.
 
 | Parameter | Value | Constraint |
 |-----------|-------|-----------|
 | Holder OD at pin | 4.5mm | Must be < roller OD (7mm) so roller contacts work first |
 | Holder wall at pin | 1.5mm | FDM minimum structural wall (see C-011) |
-| Holder plate thickness (axial) | 3–4mm | Bearing depth for pin; see C-012 |
+| Holder plate thickness (axial) | 3.5mm | Bearing depth for axle; mid of 3–4mm range (C-012) |
 | Holder material | ASA | Dimensionally stable, good layer adhesion |
 | Print orientation | Bore axis vertical (Z) | Bore formed as circular rings per layer — strongest for lateral loads |
 
 The roller (7mm) protrudes 1.25mm beyond the holder (4.5mm) on each side —
 the holder face never reaches the work.
+
+### Lower plate (L-shaped bracket)
+
+The lower plate is the primary structural part. It has two sections:
+
+1. **Horizontal base** — extended stadium shape, 20mm body beyond pin centre.
+   Blind axle bore (2mm deep) from inner (top) face; outer (bottom) face solid.
+
+2. **Vertical wall** — rises from the back of the horizontal base, starting
+   0.5mm clear of the roller surface (at X = roller_R + 0.5mm = 4.0mm from
+   pin centre). Wall height = roller height (10mm), so its top face is flush
+   with the bottom of the upper plate, providing direct support.
+
+The vertical wall + horizontal base form a J-shape when viewed from the side.
+
+### Upper plate (removable cap)
+
+Shorter stadium shape, 10mm body beyond pin centre (same width as lower plate).
+Blind axle bore (2mm deep) from inner (bottom) face; outer (top) face solid.
+Far end rests on top of the lower plate's vertical wall. Attachment method TBD
+pending overall housing design.
 
 ### Pin retention
 
