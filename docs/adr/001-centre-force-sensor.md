@@ -44,14 +44,39 @@ measurement.
 Accuracy and consistency are the primary requirements for a safety-critical
 trigger. The additional complexity of the HX711 is modest and fully justified.
 
+### Part selection (2026-05-08)
+
+**Galoce miniature flat capsule load cell, 1 kg rated capacity**
+
+| Parameter | Value |
+|-----------|-------|
+| Rated load | 1 kg (≈ 10 N) |
+| Body diameter | ø13 mm |
+| Body depth (force direction) | 9 mm |
+| Output sensitivity | 2.0 ± 0.05% mV/V |
+| Bridge impedance | 350 Ω |
+| Excitation voltage | 5–10 V |
+| Safety overload | 150% (≈ 15 N) |
+| Material | Stainless steel |
+| Source | AliExpress item 1005007884494411 |
+
+Rationale for 1 kg over 5 kg: expected violin edge contact force is a few
+newtons at most — pressing harder risks finish damage. Using full scale gives
+maximum HX711 resolution over the operating range.
+
+Flat capsule form chosen over button (ø20 mm, 12 mm deep) because it is more
+compact in both footprint and depth, with higher sensitivity (2.0 vs 1.5 mV/V).
+Pressure point capsule rejected: minimum range 300 kg, entirely unsuitable.
+
 ## Consequences
 
-- Load cell must be selected for the expected force range (~1–20 N violin
-  edge contact — to be confirmed by measurement)
-- Load cell must be integrated into the centre roller mount such that the
-  roller force is transmitted cleanly through the cell (no side-loading)
+- Housing must provide a ø13 mm pocket, 9 mm deep behind the centre roller
+  to seat the load cell (see C-001)
+- Roller holder bears directly on the flat face of the load cell — housing
+  pocket must locate the cell so force is applied perpendicular to the face
 - HX711 breakout requires 4 signal lines to MCU (VCC, GND, DATA, CLK)
+- 350 Ω bridge at 5 V draws ~14 mA — within HX711 AVDD supply capability
 - Calibration procedure required at first setup to establish N→ADC mapping
   and set GREEN/YELLOW/RED thresholds
-- Same approach should be considered for any future force measurements added
-  to the system
+- Safety overload is 15 N — shock loads from accidental knock must be
+  considered in the housing/mounting design

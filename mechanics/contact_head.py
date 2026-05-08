@@ -48,6 +48,10 @@ ROLLER_TO_WALL_MIN    = 1.0   # mm — minimum radial gap, roller OD to any hold
 POCKET_MIN_ENGAGEMENT = 1.5   # mm — minimum blind pocket depth for shock retention (C-013)
 ROLLER_H_MIN          = 3.0   # mm — roller must clear violin plate overhang (3mm edge)
 HOLDER_T_MIN          = 3.0   # mm — plate minimum for bearing loads under shock (C-012)
+# C-001: Galoce flat capsule load cell, 1 kg rated — body depth in force direction
+# Housing depth assertion deferred to housing model (not yet designed)
+CENTRE_SENSOR_DEPTH   = 9.0   # mm — load cell body depth behind centre roller (C-001)
+CENTRE_SENSOR_OD      = 13.0  # mm — load cell body diameter (C-001)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Free parameters — adjust these to change the design
