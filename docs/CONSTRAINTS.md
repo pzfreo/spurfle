@@ -114,6 +114,47 @@ Decided value: holder OD at pin = **4.5mm** (wall = 1.5mm). Roller protrudes
   assert HOLDER_PIN_OD < ROLLER_OD, "Holder overhangs roller — will contact work"
   ```
 
+### C-012 — Holder plate thickness (axial bearing depth)
+
+The holder plate thickness (in the direction parallel to the pin axis = vertical
+in 3D) determines the bearing length available to resist lateral loads on the
+pin. Failure mode is not wall cracking under normal load but rather shock
+loading if the assembly snags mid-operation.
+
+Bearing stress = F / (pin_D × plate_thickness).  
+FDM ASA conservative bearing strength ≈ 25 MPa (accounts for layer adhesion).
+
+| Load scenario | Force | Min thickness needed |
+|---|---|---|
+| Spring contact (outer) | ~2 N | < 0.1 mm |
+| Load cell max (centre) | 50 N | 1.3 mm |
+| Snag/shock estimate | ~100 N | 2.7 mm |
+
+- **Decided:** holder plate thickness = **3–4 mm** (comfortable margin over shock
+  estimate; printable without supports when bore is vertical)
+- **Print orientation constraint:** bore axis must be vertical (Z-axis) so
+  bore walls are formed as complete circular rings per layer, not bridging
+- **Code:** assert in `mechanics/contact_head.py`
+
+  ```python
+  assert HOLDER_THICKNESS >= 3.0, "C-012: holder too thin for shock loads"
+  ```
+
+### C-013 — Pin axial retention
+
+A running fit (+0.2mm clearance) provides zero axial retention force. Under
+shock loading (snag, jam) the pin can slide out of the bores, releasing the
+roller as a loose object near the cutter — a direct risk of instrument damage.
+
+- **Requirement:** each pin end must be positively retained
+- **Decided approach:** 1mm cross-drilled hole near each pin end, accepting a
+  bent wire clip or split pin. The holder plate includes a matching slot printed
+  in the same part.
+- **Alternative:** light interference-fit collar, but wire clip preferred as
+  it is field-removable for maintenance
+- **Note:** cannot be enforced by a model assertion — must be verified at
+  assembly. Captured here so it is not omitted from the design.
+
 ---
 
 ## Retract mechanism constraints
