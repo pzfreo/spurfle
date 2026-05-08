@@ -142,18 +142,21 @@ FDM ASA conservative bearing strength ≈ 25 MPa (accounts for layer adhesion).
 
 ### C-013 — Pin axial retention
 
-A running fit (+0.2mm clearance) provides zero axial retention force. Under
-shock loading (snag, jam) the pin can slide out of the bores, releasing the
-roller as a loose object near the cutter — a direct risk of instrument damage.
+A running fit (+0.2mm clearance) in a through-bore provides zero axial
+retention. The decided approach avoids this entirely by using **blind pockets**:
+neither holder plate has a through-bore. The axle sits in a 2mm blind pocket in
+each plate's inner face; the outer face is solid.
 
-- **Requirement:** each pin end must be positively retained
-- **Decided approach:** 1mm cross-drilled hole near each pin end, accepting a
-  bent wire clip or split pin. The holder plate includes a matching slot printed
-  in the same part.
-- **Alternative:** light interference-fit collar, but wire clip preferred as
-  it is field-removable for maintenance
-- **Note:** cannot be enforced by a model assertion — must be verified at
-  assembly. Captured here so it is not omitted from the design.
+- **Requirement:** axle must not be able to slide axially and release the roller
+- **Decided approach:** blind pockets in both holder plates. Axle is captive by
+  geometry — no fasteners, no cross-holes, no wire clips required.
+  - Axle length = 2 × pocket depth + roller height = 2 + 10 + 2 = 14mm
+  - Pocket depth = 2mm (leaving 1.5mm solid wall on outer face)
+- **Code:** `mechanics/contact_head.py` — `POCKET_DEPTH`, assertion
+  `POCKET_DEPTH < HOLDER_T`
+- **Note:** the upper plate is a removable cap (assembly sequence: lower plate →
+  axle → roller → upper plate). Attachment method for the upper plate to the
+  housing is TBD pending overall housing design.
 
 ---
 

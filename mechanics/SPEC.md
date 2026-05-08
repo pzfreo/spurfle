@@ -11,8 +11,9 @@ pair — update both in the same commit.
 | Roller material | Nylon (FDM printed) | Won't mar instrument finish |
 | Roller OD | 7mm | Horizontal plane; contacts instrument edge |
 | Roller axis | Vertical | OD is in the horizontal plane; height is the axial dimension |
-| Pin (axle) | 1.5mm steel | Piano wire or equivalent |
-| Pin bore clearance | +0.2mm → 1.7mm bore | Running fit |
+| Roller height (axial) | 10mm | Spans violin 3mm overhang with margin; TBD for viol da gamba |
+| Pin (axle) | 1.5mm steel × 14mm | Piano wire or equivalent; captive by geometry (see below) |
+| Pin bore clearance | +0.2mm → 1.7mm bore | Running fit in roller and holder pockets |
 | Roller wall thickness | (7 − 1.7) / 2 = 2.65mm | Adequate for FDM |
 
 ## Holder design
@@ -34,15 +35,16 @@ the holder face never reaches the work.
 
 ### Pin retention
 
-A running fit (+0.2mm) gives no axial retention. Without positive retention the
-pin can slide out under shock loading, releasing the roller near the cutter.
-**Each pin end must be retained** by one of:
+The axle is retained by **blind pockets** in both holder plates — the bore does
+not go all the way through either plate. Each plate has a 2mm blind bore from
+its inner face only; the outer face is solid. The axle (14mm = 2mm pocket +
+10mm roller + 2mm pocket) is fully captive by geometry: no cross-holes, no wire
+clips, no fasteners required.
 
-- A 1mm cross-drilled hole with a bent wire clip or split pin (preferred —
-  easy to print a slot, no special tooling)
-- A light press-fit collar printed into the holder (2nd option)
+Assembly sequence: drop axle into lower plate pocket → slide roller onto axle
+from above → place upper plate on top, capturing axle in its pocket.
 
-See C-013.
+See C-013 (updated).
 
 ## Span geometry
 
@@ -96,4 +98,10 @@ the full constraint chain.
 
 ## Build command
 
-Once `contact_head.py` exists: `python mechanics/contact_head.py`
+```sh
+uv run python mechanics/contact_head.py
+```
+
+Produces in `mechanics/out/`: `roller.{step,stl}`, `lower_plate.{step,stl}`,
+`upper_plate.{step,stl}`. Assertions fire at import time — a clean run means
+all constraints are satisfied.
