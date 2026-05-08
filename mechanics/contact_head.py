@@ -242,6 +242,9 @@ def main():
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part,  str(OUT / f"{name}.stl"))
 
+    assembly = roller + lower_plate + upper_plate
+    export_step(assembly, str(OUT / "assembly.step"))
+
     print(f"Exported: {sorted(p.name for p in OUT.iterdir())}")
     print(f"Axle (sourced): ⌀{PIN_D}mm × {AXLE_L:.1f}mm steel")
     print()
