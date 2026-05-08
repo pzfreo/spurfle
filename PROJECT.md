@@ -90,16 +90,6 @@ State: ARMED ←→ RETRACTED
   cutter descends. If any sensor drops below GREEN during countdown,
   countdown resets.
 
-Retract is triggered by any of the following:
-
-1. **Centre force → RED** — contact force below minimum threshold
-2. **Outer tangency differential → RED** — jig angle too far off tangent
-3. **Outer roller departure rate** — rate of change of either outer roller
-   displacement exceeds threshold, indicating rapid instrument departure.
-   This may fire before the centre force sensor fully drops, since the outer
-   springs begin extending the moment grip relaxes. Threshold to be determined
-   from Phase 1 data.
-
 Force zones for centre sensor:
 
 | Zone | Colour | Meaning |
