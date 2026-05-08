@@ -18,6 +18,7 @@ Run:
     uv run python mechanics/contact_head.py
 
 Exports to mechanics/out/: roller, lower_plate, upper_plate  (.step + .stl)
+Assertions enforce all numbered constraints — a clean run means all pass.
 """
 
 from pathlib import Path
@@ -34,58 +35,142 @@ from build123d import (
     extrude,
 )
 
-# ─── Parameters (from mechanics/SPEC.md) ──────────────────────────────────────
-ROLLER_OD      = 7.0          # mm — nylon FDM; contacts instrument edge
+# ══════════════════════════════════════════════════════════════════════════════
+# Named engineering limits
+# These are fixed by material/process choice, not adjustable per design.
+# Change only when switching process or material.
+# ══════════════════════════════════════════════════════════════════════════════
+
+FDM_WALL_MIN          = 1.2   # mm — absolute FDM minimum structural wall (any material)
+FDM_WALL_PREF         = 1.5   # mm — preferred minimum for load-bearing FDM walls (ASA)
+BORE_FIT              = 0.2   # mm — running fit clearance (bore = shaft_OD + BORE_FIT)
+ROLLER_TO_WALL_MIN    = 1.0   # mm — minimum radial gap, roller OD to any holder face (C-014)
+POCKET_MIN_ENGAGEMENT = 1.5   # mm — minimum blind pocket depth for shock retention (C-013)
+ROLLER_H_MIN          = 3.0   # mm — roller must clear violin plate overhang (3mm edge)
+HOLDER_T_MIN          = 3.0   # mm — plate minimum for bearing loads under shock (C-012)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Free parameters — adjust these to change the design
+# ══════════════════════════════════════════════════════════════════════════════
+
+ROLLER_OD              = 7.0   # mm — nylon FDM; contacts instrument edge
+ROLLER_H               = 10.0  # mm — nominal plate-to-plate gap (roller printed shorter)
+PIN_D                  = 1.5   # mm — steel axle diameter
+HOLDER_OD              = 4.5   # mm — holder stadium OD at pin bore end (C-011)
+LOWER_EXTEND           = 20.0  # mm — lower plate body length beyond pin centre
+UPPER_EXTEND           = 10.0  # mm — upper plate body length beyond pin centre
+HOLDER_T               = 3.5   # mm — plate thickness (C-012: min 3mm)
+POCKET_DEPTH           = 2.0   # mm — blind bore depth each plate (C-013)
+ROLLER_TO_WALL_GAP     = 1.0   # mm — radial gap, roller OD to vertical wall (C-014)
+ROLLER_AXIAL_CLEARANCE = 0.2   # mm — total axial play; 0.1mm each end
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Derived dimensions — calculated, never typed
+# ══════════════════════════════════════════════════════════════════════════════
+
 ROLLER_R       = ROLLER_OD / 2
-ROLLER_H       = 10.0         # mm — axial height; spans violin 3mm overhang with margin
-PIN_D          = 1.5          # mm — steel axle (piano wire or equivalent)
-PIN_BORE       = PIN_D + 0.2  # mm — 1.7mm running fit in roller and holder pockets
-HOLDER_OD      = 4.5          # mm — stadium OD at pin end (C-011)
 HOLDER_R       = HOLDER_OD / 2
-LOWER_EXTEND   = 20.0         # mm — lower plate body length beyond pin centre
-UPPER_EXTEND   = 10.0         # mm — upper plate body length beyond pin centre (TBD: issue #11)
-HOLDER_T       = 3.5          # mm — plate thickness; mid of 3–4mm range (C-012)
-POCKET_DEPTH           = 2.0   # mm — blind bore depth; axle captive by geometry
-ROLLER_AXIAL_CLEARANCE = 0.2   # mm — total axial play (0.1mm each end); roller spins freely
-ROLLER_H_PRINT         = ROLLER_H - ROLLER_AXIAL_CLEARANCE  # 9.8mm printed height
+PIN_BORE       = PIN_D + BORE_FIT          # 1.7 mm running fit
+ROLLER_H_PRINT = ROLLER_H - ROLLER_AXIAL_CLEARANCE   # 9.8 mm actual printed height
+WALL_START_X   = ROLLER_R + ROLLER_TO_WALL_GAP       # 4.5 mm from pin centre
+LOWER_Z        = -(ROLLER_H / 2 + HOLDER_T)
+UPPER_Z        =   ROLLER_H / 2
+AXLE_L         = 2 * POCKET_DEPTH + ROLLER_H         # 14 mm — spans both pockets
+AXLE_Z         = -(ROLLER_H / 2 + POCKET_DEPTH)
 
-# Vertical wall: rises from lower plate behind the roller to support upper plate
-WALL_CLEARANCE = 0.5          # mm — gap between wall inner face and roller surface
-WALL_START_X   = ROLLER_R + WALL_CLEARANCE   # 4.0mm from pin centre
+# ══════════════════════════════════════════════════════════════════════════════
+# Intermediate values for assertions (not used in geometry)
+# ══════════════════════════════════════════════════════════════════════════════
 
-# ─── Assertions ───────────────────────────────────────────────────────────────
+ROLLER_WALL           = (ROLLER_OD - PIN_BORE) / 2    # nylon wall around axle bore
+HOLDER_WALL           = (HOLDER_OD - PIN_D) / 2       # ASA wall at pin bore (C-011)
+ROLLER_PROTRUSION     = (ROLLER_OD - HOLDER_OD) / 2   # roller beyond holder each side
+OUTER_FACE_WALL       = HOLDER_T - POCKET_DEPTH        # solid ASA behind blind pocket (C-013)
+AXLE_RADIAL_CLEARANCE = (PIN_BORE - PIN_D) / 2        # = BORE_FIT / 2
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Assertions — running this file IS the test suite
+# ══════════════════════════════════════════════════════════════════════════════
+
+# C-011: holder geometry — must not contact work, wall must survive FDM printing
 assert HOLDER_OD < ROLLER_OD, (
-    f"C-011: holder OD {HOLDER_OD}mm overhangs roller {ROLLER_OD}mm — holder will contact work"
+    f"C-011: holder OD {HOLDER_OD}mm ≥ roller OD {ROLLER_OD}mm — "
+    f"holder contacts work before roller"
 )
-assert HOLDER_OD >= PIN_D + 2 * 1.2, (
-    f"C-011: holder wall {(HOLDER_OD - PIN_D)/2:.2f}mm too thin — FDM minimum 1.2mm"
+assert ROLLER_PROTRUSION > 0, (
+    f"C-011: roller protrusion {ROLLER_PROTRUSION:.2f}mm ≤ 0 — "
+    f"holder OD must be strictly less than roller OD"
+)
+assert HOLDER_WALL >= FDM_WALL_PREF, (
+    f"C-011: holder wall {HOLDER_WALL:.2f}mm < preferred FDM minimum {FDM_WALL_PREF}mm "
+    f"— wall around pin bore will fail under lateral load"
+)
+
+# C-012: plate thickness for bearing loads
+assert HOLDER_T >= HOLDER_T_MIN, (
+    f"C-012: holder plate {HOLDER_T}mm < {HOLDER_T_MIN}mm — "
+    f"insufficient bearing depth for shock loads (see constraint analysis)"
+)
+
+# C-013: axle retention via blind pockets
+assert POCKET_DEPTH >= POCKET_MIN_ENGAGEMENT, (
+    f"C-013: pocket depth {POCKET_DEPTH}mm < {POCKET_MIN_ENGAGEMENT}mm minimum — "
+    f"axle engagement too short to resist shock extraction"
 )
 assert POCKET_DEPTH < HOLDER_T, (
-    f"Blind pocket {POCKET_DEPTH}mm deep breaks through {HOLDER_T}mm plate"
+    f"C-013: pocket depth {POCKET_DEPTH}mm ≥ plate thickness {HOLDER_T}mm — "
+    f"bore exits the outer face, defeating retention"
 )
-assert ROLLER_H >= 3.0, (
-    f"Roller height {ROLLER_H}mm must clear violin plate overhang (3mm minimum)"
-)
-assert ROLLER_AXIAL_CLEARANCE > 0, "Roller needs axial clearance to spin"
-assert ROLLER_AXIAL_CLEARANCE < POCKET_DEPTH, "Clearance must not exceed pocket depth"
-assert WALL_START_X > ROLLER_R, (
-    "Vertical wall inner face intersects roller"
+assert OUTER_FACE_WALL >= FDM_WALL_MIN, (
+    f"C-013: outer face wall {OUTER_FACE_WALL:.2f}mm < FDM minimum {FDM_WALL_MIN}mm — "
+    f"plate will fracture behind pocket under load"
 )
 
-# ─── Derived ──────────────────────────────────────────────────────────────────
-LOWER_Z = -(ROLLER_H / 2 + HOLDER_T)   # −8.5 mm
-UPPER_Z =   ROLLER_H / 2               # +5.0 mm
-AXLE_L  = 2 * POCKET_DEPTH + ROLLER_H  # 14 mm — fully captive
-AXLE_Z  = -(ROLLER_H / 2 + POCKET_DEPTH)  # −7.0 mm
+# C-014: radial clearance between roller OD and any holder face
+assert ROLLER_TO_WALL_GAP >= ROLLER_TO_WALL_MIN, (
+    f"C-014: roller-to-wall gap {ROLLER_TO_WALL_GAP}mm < {ROLLER_TO_WALL_MIN}mm minimum — "
+    f"roller will foul holder under FDM tolerances"
+)
+
+# Roller FDM manufacturability
+assert ROLLER_WALL >= FDM_WALL_MIN, (
+    f"Roller wall {ROLLER_WALL:.2f}mm < FDM minimum {FDM_WALL_MIN}mm — "
+    f"pin bore too large for roller OD, wall will fail"
+)
+assert ROLLER_H >= ROLLER_H_MIN, (
+    f"Roller height {ROLLER_H}mm < {ROLLER_H_MIN}mm — "
+    f"roller won't span violin plate overhang (minimum 3mm edge height)"
+)
+assert ROLLER_H_PRINT > 0, (
+    f"ROLLER_AXIAL_CLEARANCE {ROLLER_AXIAL_CLEARANCE}mm ≥ ROLLER_H {ROLLER_H}mm — "
+    f"printed roller has zero or negative height"
+)
+
+# Assembly fit
+assert AXLE_RADIAL_CLEARANCE > 0, (
+    f"Axle bore {PIN_BORE}mm ≤ axle OD {PIN_D}mm — axle won't fit in bore"
+)
+assert ROLLER_AXIAL_CLEARANCE > 0, (
+    f"ROLLER_AXIAL_CLEARANCE = 0 — "
+    f"roller will be clamped between plates and won't spin"
+)
+assert ROLLER_AXIAL_CLEARANCE < POCKET_DEPTH, (
+    f"ROLLER_AXIAL_CLEARANCE {ROLLER_AXIAL_CLEARANCE}mm ≥ POCKET_DEPTH {POCKET_DEPTH}mm — "
+    f"axle protrudes far enough to allow extraction"
+)
 
 OUT = Path(__file__).parent / "out"
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Geometry
+# ══════════════════════════════════════════════════════════════════════════════
+
 def build_roller():
     """Nylon roller — cylindrical with running-fit axle bore.
 
-    Printed height is ROLLER_H_PRINT (9.8mm), 0.1mm shorter than the plate
-    gap each end so the roller spins freely without being clamped.
+    Printed height ROLLER_H_PRINT is shorter than plate gap by
+    ROLLER_AXIAL_CLEARANCE (0.1mm each end), so the roller spins freely.
     Centered at Z=0 in the assembly.
     """
     body = Cylinder(ROLLER_R, ROLLER_H_PRINT)
@@ -94,45 +179,34 @@ def build_roller():
 
 
 def build_lower_plate():
-    """Lower holder plate — L-shaped bracket.
+    """Lower holder plate — L-shaped bracket (horizontal base + vertical wall).
 
-    Horizontal base: extended stadium (LOWER_EXTEND body length), blind axle
-    bore from inner (top) face.
+    Horizontal base: extended stadium (LOWER_EXTEND body), blind axle bore
+    (POCKET_DEPTH deep) from inner face; outer face solid.
 
-    Vertical wall: rises from top of horizontal base, starting WALL_CLEARANCE
-    beyond the roller surface, extending to the far end. Top face of wall is
-    flush with UPPER_Z (bottom of upper plate), providing direct support.
+    Vertical wall: rises from top of base, starting ROLLER_TO_WALL_GAP
+    beyond the roller surface. Top face flush with UPPER_Z (upper plate
+    bottom), providing direct support.
     """
     # ── Horizontal base ───────────────────────────────────────────────────────
-    lower_slot_l = LOWER_EXTEND + HOLDER_OD
     with BuildSketch() as sk:
         with Locations((LOWER_EXTEND / 2, 0)):
-            SlotOverall(lower_slot_l, HOLDER_OD)
+            SlotOverall(LOWER_EXTEND + HOLDER_OD, HOLDER_OD)
     horiz = extrude(sk.sketch, HOLDER_T)
-
-    # Blind axle bore from inner (top) face
     horiz -= Pos(0, 0, HOLDER_T - POCKET_DEPTH) * Cylinder(
         PIN_BORE / 2, POCKET_DEPTH + 0.1,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
 
     # ── Vertical wall ─────────────────────────────────────────────────────────
-    wall_h = ROLLER_H  # fills the gap between plates exactly
-
-    # Straight body section
     wall_box = Pos(WALL_START_X, 0, HOLDER_T) * Box(
-        LOWER_EXTEND - WALL_START_X,
-        HOLDER_OD,
-        wall_h,
+        LOWER_EXTEND - WALL_START_X, HOLDER_OD, ROLLER_H,
         align=(Align.MIN, Align.CENTER, Align.MIN),
     )
-
-    # Far-end semicircular cap (matches end of horizontal base)
     wall_cap = Pos(LOWER_EXTEND, 0, HOLDER_T) * Cylinder(
-        HOLDER_R, wall_h,
+        HOLDER_R, ROLLER_H,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
-
     return horiz + wall_box + wall_cap
 
 
@@ -142,10 +216,9 @@ def build_upper_plate():
     Blind axle bore from inner (bottom) face. Far end rests on the lower
     plate's vertical wall. Attachment method TBD pending housing design.
     """
-    upper_slot_l = UPPER_EXTEND + HOLDER_OD
     with BuildSketch() as sk:
         with Locations((UPPER_EXTEND / 2, 0)):
-            SlotOverall(upper_slot_l, HOLDER_OD)
+            SlotOverall(UPPER_EXTEND + HOLDER_OD, HOLDER_OD)
     plate = extrude(sk.sketch, HOLDER_T)
     plate -= Pos(0, 0, -0.1) * Cylinder(
         PIN_BORE / 2, POCKET_DEPTH + 0.1,
@@ -170,10 +243,18 @@ def main():
         export_stl(part,  str(OUT / f"{name}.stl"))
 
     print(f"Exported: {sorted(p.name for p in OUT.iterdir())}")
-    print(f"Axle (not exported — sourced): ⌀{PIN_D}mm × {AXLE_L}mm steel")
-    print(f"Roller protrusion beyond holder: {(ROLLER_OD - HOLDER_OD)/2:.2f}mm each side")
-    print(f"Vertical wall: X={WALL_START_X}→{LOWER_EXTEND+HOLDER_R:.1f}mm, "
-          f"clearance from roller={WALL_CLEARANCE}mm")
+    print(f"Axle (sourced): ⌀{PIN_D}mm × {AXLE_L:.1f}mm steel")
+    print()
+    print("Clearances:")
+    print(f"  Roller axial each end : {ROLLER_AXIAL_CLEARANCE/2:.2f} mm")
+    print(f"  Axle radial each side : {AXLE_RADIAL_CLEARANCE:.2f} mm")
+    print(f"  Roller to wall (radial): {ROLLER_TO_WALL_GAP:.2f} mm")
+    print()
+    print("Wall thicknesses:")
+    print(f"  Roller wall (nylon)   : {ROLLER_WALL:.2f} mm")
+    print(f"  Holder wall at pin    : {HOLDER_WALL:.2f} mm  (FDM pref ≥{FDM_WALL_PREF})")
+    print(f"  Outer face wall       : {OUTER_FACE_WALL:.2f} mm  (FDM min ≥{FDM_WALL_MIN})")
+    print(f"  Roller protrusion     : {ROLLER_PROTRUSION:.2f} mm beyond holder each side")
 
 
 if __name__ == "__main__":

@@ -40,9 +40,9 @@ The lower plate is the primary structural part. It has two sections:
    Blind axle bore (2mm deep) from inner (top) face; outer (bottom) face solid.
 
 2. **Vertical wall** — rises from the back of the horizontal base, starting
-   0.5mm clear of the roller surface (at X = roller_R + 0.5mm = 4.0mm from
-   pin centre). Wall height = roller height (10mm), so its top face is flush
-   with the bottom of the upper plate, providing direct support.
+   1.0mm clear of the roller surface (at X = roller_R + 1.0mm = 4.5mm from
+   pin centre, see C-014). Wall height = roller height (10mm), so its top face
+   is flush with the bottom of the upper plate, providing direct support.
 
 The vertical wall + horizontal base form a J-shape when viewed from the side.
 

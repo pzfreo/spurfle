@@ -158,6 +158,26 @@ each plate's inner face; the outer face is solid.
   axle → roller → upper plate). Attachment method for the upper plate to the
   housing is TBD pending overall housing design.
 
+### C-014 — Radial clearance between roller OD and holder face
+
+The lower plate's vertical wall starts at `WALL_START_X = ROLLER_R + ROLLER_TO_WALL_GAP`
+from the pin centre. FDM dimensional tolerance is typically ±0.2–0.3mm per side;
+a 1mm designed gap ensures the roller spins freely in the worst-case print.
+
+- **Source:** FDM tolerance stack + roller spin-clearance requirement
+- **Drives:** `WALL_START_X` (position of vertical wall inner face),
+  maximum `ROLLER_R` for a given `ROLLER_TO_WALL_GAP`
+- **Decided:** minimum gap = 1mm (current value: 1.0mm)
+- **Status:** satisfied — vertical wall starts at 4.5mm from pin centre, roller OD edge at 3.5mm, gap = 1.0mm ✓
+- **Code:** `mechanics/contact_head.py` — `ROLLER_TO_WALL_GAP`, `ROLLER_TO_WALL_MIN`
+
+  ```python
+  assert ROLLER_TO_WALL_GAP >= ROLLER_TO_WALL_MIN, (
+      f"C-014: roller-to-wall gap {ROLLER_TO_WALL_GAP}mm < {ROLLER_TO_WALL_MIN}mm minimum — "
+      f"roller will foul holder under FDM tolerances"
+  )
+  ```
+
 ---
 
 ## Retract mechanism constraints
