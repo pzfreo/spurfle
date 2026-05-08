@@ -209,6 +209,19 @@ measurable data point that will set the retract latency requirement.
 - What retract latency is required for the cutter not to overrun?
 - Is visual feedback (LED) sufficient, or is audio (buzzer) essential?
 
+**Key latency measurement:**
+Log a timestamp on every contact-loss event (force drops below GREEN threshold)
+and note whether the operator recovered. The critical window is the time between
+edge loss and the point where an unretracted cutter would have caused an
+unrecoverable overcut. This sets the retract speed requirement for Phase 3.
+
+A standard NEMA 17 + T8 lead screw can achieve a 3mm retract in ~70–100ms
+(8mm-lead screw) or ~200–350ms (2mm-lead screw), including the acceleration
+ramp. If Phase 1 data shows the critical window is consistently above ~150ms,
+the stepper architecture is viable. If the window is ~50ms or less, a different
+mechanism (pre-loaded spring release, solenoid) will be needed and the ADR-003
+decision must be revisited.
+
 ### Phase 2 — Tangency sensing and display
 
 Adds the outer roller pair (spring-loaded, Hall effect displacement sensors)
