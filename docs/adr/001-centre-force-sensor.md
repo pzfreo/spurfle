@@ -46,7 +46,8 @@ trigger. The additional complexity of the HX711 is modest and fully justified.
 
 ### Part selection (2026-05-08)
 
-**Galoce miniature flat capsule load cell, 1 kg rated capacity**
+**Miniature flat capsule load cell, 1 kg rated capacity**
+(AliExpress item 1005007884494411 — brand unconfirmed)
 
 | Parameter | Value |
 |-----------|-------|
