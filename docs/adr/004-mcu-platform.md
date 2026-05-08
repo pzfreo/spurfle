@@ -1,8 +1,9 @@
 ---
 id: ADR-004
-title: RP2040 (Raspberry Pi Pico) as MCU platform
+title: RP2350 (Raspberry Pi Pico 2) as MCU platform
 status: decided
 date: 2026-05-07
+updated: 2026-05-08
 ---
 
 ## Context
@@ -41,20 +42,31 @@ The developer has prior experience with Arduino (ATmega328P) and ESP32.
 
 **RP2040 (Raspberry Pi Pico)**
 - Dual core ARM Cortex-M0+ at 133MHz
-- **PIO (Programmable I/O)**: hardware state machines that run independently
-  of both CPU cores. The HX711 load cell ADC requires precise clock timing;
-  PIO handles this without any CPU overhead, improving both timing accuracy
-  and freeing the safety-loop core entirely for control logic.
+- PIO, no WiFi, 12-bit ADC, 264KB RAM, 26 GPIO, ~£4
+- Accepted initially; superseded by RP2350 (see below)
+
+**RP2350 (Raspberry Pi Pico 2)**
+- Dual core ARM Cortex-M33 at 150MHz — hardware FPU on each core
+- **PIO**: 3 blocks (vs 2 on RP2040), same concept; handles HX711 clock
+  timing without CPU overhead
+- **Hardware FPU**: load cell signal filtering (moving average, Kalman)
+  runs without cycle cost on either core
+- 520KB RAM (vs 264KB) — headroom for firmware growth
 - No WiFi/Bluetooth: eliminates RF noise concern near analog sensors
 - 12-bit ADC — adequate for Hall effect displacement sensors
 - 26 GPIO — sufficient for all spurfle I/O
-- ~£4, widely available
-- Strong library and community support (Arduino framework or C/C++ SDK)
+- Pin-compatible with Pico; ~£5, widely available
+- Strong library support (Arduino-Pico framework, C/C++ SDK); RP2350
+  support confirmed in both as of 2025
 - Accepted
 
 ## Decision
 
-Use the **RP2040 (Raspberry Pi Pico)** as the MCU platform.
+Use the **RP2350 (Raspberry Pi Pico 2)** as the MCU platform.
+
+Updated 2026-05-08: upgraded from RP2040 to RP2350. Pin-compatible, no
+firmware architecture change required. HX711 PIO library compatibility
+with RP2350 to be verified before finalising firmware.
 
 ## Core allocation
 
@@ -67,12 +79,14 @@ PIO handles HX711 clock timing independently of both cores.
 
 ## Consequences
 
-- Developer will need to learn RP2040 / Pico SDK or Arduino-Pico framework
+- Developer will need to learn RP2350 / Pico SDK or Arduino-Pico framework
   — this is intentional; the architecture benefits justify it
 - 3.3V logic throughout — verify all peripheral modules (HX711 breakout,
   stepper driver, LED drivers) are 3.3V compatible or include level shifting
-- HX711 breakout boards are widely available and work at 3.3V
+- HX711 breakout boards are widely available and work at 3.3V (confirmed,
+  ADR-001: clone board rated 2.6V minimum)
 - TMC2208/DRV8825 stepper drivers accept 3.3V logic signals
-- Inter-core communication via RP2040 hardware FIFO (built-in, lockless)
+- Inter-core communication via RP2350 hardware FIFO (built-in, lockless)
   — use for passing state from safety core to UI core
-- PIO HX711 library exists for RP2040; verify before finalising PCB design
+- **Verify:** HX711 PIO library compatibility with RP2350 before finalising
+  firmware — most libraries updated for RP2350 but confirm explicitly
