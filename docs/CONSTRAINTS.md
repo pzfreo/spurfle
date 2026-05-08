@@ -60,11 +60,59 @@ satisfied.
 - **Drives:** spring must provide ≥ 3mm travel without bottoming or losing preload
 - **Code:** `mechanics/contact_head.py` — `OUTER_SPRING_TRAVEL_MIN`
 
-### C-005 — Centre roller OD vs outer roller span
-- **Source:** outer-to-outer span = 20mm; centre roller is between the outer two
-- **Drives:** centre roller OD must be < 20mm (so it fits between the outers)
-- **Status:** roller OD TBD — to be confirmed
+### C-005 — Inter-roller gap from touch-point span and roller OD
+
+Roller design (decided): 7mm OD nylon roller, 1.5mm steel pin axle.
+Touch-point span (decided): 20mm between outer roller touch points.
+Roller axis is **vertical**; OD is in the horizontal plane; roller height is
+the axial (vertical) dimension that spans the instrument edge profile.
+
+The span is built up as:
+
+```
+span = 2 × (roller_OD + gap)
+```
+
+Each side contributes one full roller diameter (centre roller radius + outer
+roller radius) plus one gap. Rearranging:
+
+```
+gap = span/2 − roller_OD = 10 − 7 = 3 mm
+```
+
+- **Constraint:** gap ≥ 1mm (minimum clearance between roller bodies)
+- **Drives:** for a fixed span, max roller OD = span/2 − 1 = 9mm;
+  for a fixed roller OD, min span = 2 × (roller_OD + 1) = 16mm
+- **Status:** satisfied — 7mm OD, 20mm span gives 3mm gap ✓
 - **Code:** assert in `mechanics/contact_head.py`
+
+  ```python
+  assert ROLLER_GAP >= 1.0, (
+      f"Rollers overlap: gap={ROLLER_GAP}mm with OD={ROLLER_OD}mm, span={TOUCH_SPAN}mm"
+  )
+  ```
+
+### C-011 — Holder wall at pin: structural adequacy vs roller clearance
+
+The roller holder (two stadium-shaped ASA printed end pieces, one above and one
+below the roller) grips the pin at the semicircular ends. The holder OD at the
+pin must satisfy two opposing requirements:
+
+- **Lower bound** (structural): FDM ASA minimum reliable wall = 1.2mm;
+  preferred 1.5mm. Holder OD ≥ pin_OD + 2 × 1.5mm = 1.5 + 3.0 = **4.5mm**
+- **Upper bound** (clearance): holder must not protrude beyond the roller OD
+  or it contacts the work before the roller does.
+  Holder OD < roller_OD → holder OD < **7mm**
+
+Decided value: holder OD at pin = **4.5mm** (wall = 1.5mm). Roller protrudes
+1.25mm beyond holder on each side — roller always contacts the work first.
+
+- **Code:** assert in `mechanics/contact_head.py`
+
+  ```python
+  assert HOLDER_PIN_OD >= PIN_D + 2 * 1.2, "Holder wall too thin — will fail in FDM"
+  assert HOLDER_PIN_OD < ROLLER_OD, "Holder overhangs roller — will contact work"
+  ```
 
 ---
 
