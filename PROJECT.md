@@ -175,8 +175,109 @@ throughout and manages both lift and controlled descent.
 
 ## Current state
 
-- `manual/` — copied from purfel repo (working mechanical design)
+- `manual/` — copied from purfel repo (working mechanical design, previous iteration)
 - All other layers: design phase, not yet started
+
+## Prototype phases
+
+Development is split into four phases, each independently testable:
+
+### Phase 1 — Force sensing and feedback (no retraction, no tangency)
+
+**Goal:** validate that an operator can manoeuvre a real instrument around a
+fixed contact point while maintaining appropriate force, and characterise what
+the signal looks like when they can't.
+
+**Why this first:** the core safety interaction has never been tested. Without
+real data on contact force range, signal noise, and operator behaviour during
+edge loss, every subsequent design decision is speculation. The presence of
+LED/buzzer feedback is deliberate — each contact-loss event becomes a
+measurable data point that will set the retract latency requirement.
+
+**Minimum rig:**
+- Contact head mockup: centre roller (fixed) + outer rollers (spring-loaded,
+  no Hall effect sensors required) — springs included from the start to get
+  realistic departure dynamics; fall back to centre-only if the mechanical
+  design proves too challenging at this stage
+- Load cell + HX711 + RP2040
+- Three LEDs (green / yellow / red) for force zone display
+- Buzzer for audible contact-loss alert
+- No housing required — benchtop assembly
+
+**Questions this phase answers:**
+- What is the actual contact force range during normal use?
+- How much signal noise comes from vibration and edge slip?
+- Can the operator maintain contact through tight curves (waist, bouts)?
+- How quickly does the operator respond to a feedback signal?
+- What retract latency is required for the cutter not to overrun?
+- Is visual feedback (LED) sufficient, or is audio (buzzer) essential?
+
+**Key latency measurement:**
+Log a timestamp on every contact-loss event (force drops below GREEN threshold)
+and note whether the operator recovered. The critical window is the time between
+edge loss and the point where an unretracted cutter would have caused an
+unrecoverable overcut. This sets the retract speed requirement for Phase 3.
+
+A standard NEMA 17 + T8 lead screw can achieve a 3mm retract in ~70–100ms
+(8mm-lead screw) or ~200–350ms (2mm-lead screw), including the acceleration
+ramp. If Phase 1 data shows the critical window is consistently above ~150ms,
+the stepper architecture is viable. If the window is ~50ms or less, a different
+mechanism (pre-loaded spring release, solenoid) will be needed and the ADR-003
+decision must be revisited.
+
+**Test scenarios to log:**
+
+Three distinct release scenarios produce different force profiles and must be
+tested separately:
+
+1. **Slow release** — operator deliberately and gradually reduces pressure.
+   Tests whether the yellow warning zone provides meaningful reaction time.
+
+2. **Quick pull** — operator pulls the instrument away sharply.
+   Worst-case detection latency; force is approximately a step function.
+
+3. **Spring release** — operator relaxes grip and lets the outer springs eject
+   the instrument. Most realistic "I lost my grip" scenario. Requires the outer
+   spring mechanism to be mocked up in Phase 1 (springs + rollers, Hall effect
+   sensors optional).
+
+**Note on spring dynamics:** The spring-loaded outer rollers are not only
+tangency sensors — they actively push the instrument away from the jig when
+grip is released. This spring-assisted departure may produce a sharper force
+edge at the centre sensor than free motion alone, which is beneficial for
+detection. It also means departure speed is faster than intuition suggests.
+If the outer springs are included in Phase 1, their displacement (measured via
+Hall effect or inferred from the force curve) gives instrument departure
+velocity directly without needing an accelerometer.
+
+Log the full force curve at maximum HX711 sample rate (~80 SPS), not just
+threshold-crossing timestamps, so departure profiles can be reconstructed and
+compared across scenarios.
+
+### Phase 2 — Tangency sensing and display
+
+Adds the outer roller pair (spring-loaded, Hall effect displacement sensors)
+and the differential tangency display. Builds on the Phase 1 rig.
+
+**Questions this phase answers:**
+- Does differential displacement reliably indicate jig angle?
+- What threshold separates "drifting" from "unsafe"?
+- Can the operator use the feedback to correct angle in real time?
+
+### Phase 3 — Retraction
+
+Adds the stepper + lead screw Dremel carriage and the full safety state machine
+(ARMED ↔ RETRACTED, countdown, re-engagement). Integrates with Phase 1 and 2
+sensing.
+
+**Latency requirement** (to be determined from Phase 1 data) drives stepper
+speed and lead screw pitch selection.
+
+### Phase 4 — Linear slide and height adjustment
+
+Adds the vertical linear slide and instrument cradle for Scenario 2 (assembled
+body in a stand). Can be developed in parallel with Phase 3 once Phase 1 has
+validated the sensing geometry.
 
 ## Open questions
 
