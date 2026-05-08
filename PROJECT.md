@@ -90,6 +90,16 @@ State: ARMED ←→ RETRACTED
   cutter descends. If any sensor drops below GREEN during countdown,
   countdown resets.
 
+Retract is triggered by any of the following:
+
+1. **Centre force → RED** — contact force below minimum threshold
+2. **Outer tangency differential → RED** — jig angle too far off tangent
+3. **Outer roller departure rate** — rate of change of either outer roller
+   displacement exceeds threshold, indicating rapid instrument departure.
+   This may fire before the centre force sensor fully drops, since the outer
+   springs begin extending the moment grip relaxes. Threshold to be determined
+   from Phase 1 data.
+
 Force zones for centre sensor:
 
 | Zone | Colour | Meaning |
@@ -195,7 +205,10 @@ LED/buzzer feedback is deliberate — each contact-loss event becomes a
 measurable data point that will set the retract latency requirement.
 
 **Minimum rig:**
-- Centre roller on a fixed post at instrument-edge height
+- Contact head mockup: centre roller (fixed) + outer rollers (spring-loaded,
+  no Hall effect sensors required) — springs included from the start to get
+  realistic departure dynamics; fall back to centre-only if the mechanical
+  design proves too challenging at this stage
 - Load cell + HX711 + RP2040
 - Three LEDs (green / yellow / red) for force zone display
 - Buzzer for audible contact-loss alert
