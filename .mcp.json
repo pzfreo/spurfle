@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "build123d": {
+      "command": "uv",
+      "args": ["tool", "run", "--from", "git+https://github.com/pzfreo/build123d-mcp", "build123d-mcp"]
+    }
+  }
+}
