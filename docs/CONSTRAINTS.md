@@ -222,6 +222,34 @@ a 1mm designed gap ensures the roller spins freely in the worst-case print.
 
 ---
 
+---
+
+## Tapping-jig / rotating-frame constraints
+
+### C-015 — Mount block is an existing tapping jig (reference geometry)
+
+The "mount" modelled in `m2/mount.py` is **not a designed part**. It is a
+reproduction of a physical tapping jig already in use — a 30 × 56 × 28 mm
+block with a ø19 mm vertical bore, two 6800 bearings press-fit at the bore
+ends, and 5 × 5 mm chamfers on the front vertical edges. All dimensions
+are fixed by the existing hardware.
+
+- **Source:** Physical jig already manufactured; cannot be modified.
+- **Drives:** Any rotating frame, adapter, or fixture that interacts with
+  this mount must accept the existing geometry, including the **off-centre
+  bore** (axis at y = −16.5 mm; front clearance 11.5 mm, back clearance 44.5 mm).
+  Rotation-clearance and interference checks belong on the *downstream* part,
+  not on the mount.
+- **Status:** modelled in `m2/mount.py`; downstream parts (e.g. `m2/frame.py`)
+  import constants from it and assert their own clearances against them.
+- **Code:** `m2/mount.py` — docstring and this entry both state explicitly
+  that the file is reference geometry; do not change dimensions to suit a
+  downstream design.
+- **Note:** the mount was originally designed for vertical-spindle tapping;
+  the rotating-frame use is a second, secondary application of the same jig.
+
+---
+
 ## How to add a constraint
 
 1. Assign the next C-NNN number
