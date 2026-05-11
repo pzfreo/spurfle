@@ -45,6 +45,7 @@ from build123d import (
     GeomType,
     Pos,
     RegularPolygon,
+    Rotation,
     SlotOverall,
     chamfer,
     export_step,
@@ -173,7 +174,56 @@ STANDOFF_W = min(
 ) - STANDOFF_CLEARANCE           # = 14 mm; wall ≈ 3.5 mm each side
 STANDOFF_HOLE_D = M6_BOLT_CLEARANCE_D + 0.5             # extra clearance for standoff bolt passage
 
+# ---- Back-mount: M4 heat-set inserts for face-plate adapter wing ---- #
+# The −X back ends of `plate` and `shoe` are squared off (was: half-stadium)
+# so a flat face is available for a wing to bolt against.  The wing carries
+# 4× M5 holes in the 38×25mm CNC router pattern that mates with the
+# rotating-frame face plate (m2/frame.py FACEPLATE_ATTACH).
+M4_INSERT_OD              = 5.7    # mm — M4 brass heat-set insert nominal OD
+M4_INSERT_LENGTH          = 8.0    # mm — common M4 insert length
+HEATSET_PREBORE_REDUCTION = 0.15   # mm — pre-bore = insert_OD − this (gripping)
+HEATSET_CHAMFER_DEPTH     = 0.5    # mm — entry chamfer guides insert in
+HEATSET_CHAMFER_WIDTH     = 0.5    # mm — radial widening at entry
+HEATSET_RELIEF_DEPTH      = 2.0    # mm — relief bore for displaced plastic
+
+BACK_MOUNT_INSERT_Y       = 10.0   # mm — Y offset of back-face insert pair (±Y)
+
+# Wall-margin assertions for the new back-face inserts
+assert PLATE_BACK_WALL >= M4_INSERT_LENGTH + 1.5, (
+    f"plate back wall {PLATE_BACK_WALL}mm < {M4_INSERT_LENGTH}mm insert + 1.5mm wall"
+)
+assert END_WALL_BACK >= M4_INSERT_LENGTH + 1.5, (
+    f"shoe back wall {END_WALL_BACK}mm < {M4_INSERT_LENGTH}mm insert + 1.5mm wall"
+)
+assert BACK_MOUNT_INSERT_Y + M4_INSERT_OD/2 + 1.5 <= PLATE_W/2, (
+    f"M4 insert at y=±{BACK_MOUNT_INSERT_Y} OD {M4_INSERT_OD} — "
+    f"insert breaks plate side wall"
+)
+
 OUT = Path(__file__).parent / "out"
+
+
+def _heatset_pocket_x_in(insert_od, length, x_face, y, z,
+                         relief_d, relief_depth=HEATSET_RELIEF_DEPTH):
+    """Heat-set insert pocket entering in +X from the part's −X back face.
+    Pre-bore (slightly under insert OD) + entry chamfer + back relief.
+    Returns a shape to subtract from the parent."""
+    pre_bore_r = (insert_od - HEATSET_PREBORE_REDUCTION) / 2
+    bore = Pos(x_face - 0.05, y, z) * Rotation((0, 90, 0)) * Cylinder(
+        pre_bore_r, length + 0.1,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+    chamf = Pos(x_face, y, z) * Rotation((0, 90, 0)) * Cone(
+        bottom_radius=pre_bore_r + HEATSET_CHAMFER_WIDTH,
+        top_radius=pre_bore_r,
+        height=HEATSET_CHAMFER_DEPTH + 0.05,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+    relief = Pos(x_face + length - 0.05, y, z) * Rotation((0, 90, 0)) * Cylinder(
+        relief_d / 2, relief_depth + 0.1,
+        align=(Align.CENTER, Align.CENTER, Align.MIN),
+    )
+    return bore + chamf + relief
 
 
 def build_plate():
@@ -186,6 +236,13 @@ def build_plate():
     with BuildSketch() as sk:
         SlotOverall(PLATE_L, PLATE_W)
     plate = extrude(sk.sketch, amount=PLATE_T)
+
+    # Square off the −X end so the back-mount wing has a flat face to bolt to.
+    # Fill the back half-stadium's bounding rectangle.
+    plate += Pos(-PLATE_L/2, 0, 0) * Box(
+        PLATE_W/2, PLATE_W, PLATE_T,
+        align=(Align.MIN, Align.CENTER, Align.MIN),
+    )
 
     # Dremel bore + thread.
     plate -= Pos(THREAD_X, 0, -0.1) * Cylinder(
@@ -214,6 +271,14 @@ def build_plate():
         )
         plate -= Pos(x, 0, PLATE_T - M6_NUT_POCKET_T) * m6_nut_pocket
 
+    # M4 heat-set inserts in back face (face-plate adapter wing bolts here)
+    for y in (BACK_MOUNT_INSERT_Y, -BACK_MOUNT_INSERT_Y):
+        plate -= _heatset_pocket_x_in(
+            M4_INSERT_OD, M4_INSERT_LENGTH,
+            x_face=-PLATE_L/2, y=y, z=PLATE_T/2,
+            relief_d=M4_BOLT_CLEARANCE_D,
+        )
+
     return plate
 
 
@@ -221,6 +286,12 @@ def build_shoe():
     with BuildSketch() as sk:
         SlotOverall(SHOE_L, SHOE_W)
     shoe = extrude(sk.sketch, amount=SHOE_T)
+
+    # Square off the −X back end so the back-mount wing has a flat face.
+    shoe += Pos(-SHOE_L/2, 0, 0) * Box(
+        SHOE_W/2, SHOE_W, SHOE_T,
+        align=(Align.MIN, Align.CENTER, Align.MIN),
+    )
 
     # Surround: cut the front region away, add back a half-stadium snout.
     surround_x_start = SURROUND_X - SURROUND_LEN / 2
@@ -291,6 +362,14 @@ def build_shoe():
             radius=STANDOFF_BOLT_D / 2,
             height=SHOE_T - COUNTERSINK_DEPTH + 0.2,
             align=(Align.CENTER, Align.CENTER, Align.MIN),
+        )
+
+    # M4 heat-set inserts in back face (face-plate adapter wing bolts here)
+    for y in (BACK_MOUNT_INSERT_Y, -BACK_MOUNT_INSERT_Y):
+        shoe -= _heatset_pocket_x_in(
+            M4_INSERT_OD, M4_INSERT_LENGTH,
+            x_face=-SHOE_L/2, y=y, z=SHOE_T/2,
+            relief_d=M4_BOLT_CLEARANCE_D,
         )
 
     return shoe
