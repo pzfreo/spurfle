@@ -64,7 +64,11 @@ STUB_X_OFFSET        = 7.0   # mm — bump centre offset from M4 bolt axis in +X
 # Body
 BODY_HEIGHT          = 11.0  # mm — body Z extent below the shoe bottom
                              # (spans the violin top-plate thickness + rib contact range)
-BODY_BACK_EXTENT     = 3.75  # mm — body extent in −X from the M4 bolt
+BODY_BACK_EXTENT     = 6.0   # mm — body extent in −X from the M4 bolt.
+                             # Upstand stadium (length 9, offset −1.5) reaches
+                             # X = −1.5 − 9/2 = −6 at its leftmost point.
+                             # Body's −X edge matches so the upstand sits
+                             # fully on the body — no print supports needed.
 BODY_HALF_WIDTH      = 5.0   # mm — body half-extent in Y (matches bump outer Y)
 
 # Required minimum +X protrusion of bump past body's +X edge
@@ -142,6 +146,13 @@ assert BODY_HALF_WIDTH >= M4_BOLT_CLEARANCE_D / 2 + FDM_WALL_PREF, (
 # Body height enough to reach the rib's contact zone
 assert BODY_HEIGHT >= 7.0, (
     f"body Z height {BODY_HEIGHT}mm < 7mm — won't span violin rib"
+)
+# Body must extend far enough in −X to fully support the upstand's footprint
+# (so the upstand doesn't overhang into thin air — printable without supports).
+_UPSTAND_MINUS_X = UPPER_STEM1_LEN / 2 + UPPER_STEM1_OFFSET   # = 6.0
+assert BODY_BACK_EXTENT >= _UPSTAND_MINUS_X, (
+    f"body −X extent {BODY_BACK_EXTENT}mm < upstand −X reach "
+    f"{_UPSTAND_MINUS_X}mm — upstand cap would overhang, requires supports"
 )
 # Upstand must match the upper_sleeve stem in X/Y (same stadium fits same slot)
 assert CARRIAGE_UPSTAND_HEIGHT > 0, (
