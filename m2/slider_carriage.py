@@ -38,6 +38,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import math
+
 from build123d import (
     Align, Box, BuildSketch, Cylinder, Pos, SlotOverall,
     export_step, export_stl, extrude,
@@ -59,7 +61,12 @@ from cutter import (
 # Slider bumps — integrated into the body's plan-view perimeter
 STUB_OD              = 5.0   # mm — half-circle bump diameter (rib contact)
 STUB_C_TO_C          = 5.0   # mm — apex-to-apex spacing in Y (bumps touch at Y=0)
-STUB_X_OFFSET        = 7.0   # mm — bump centre offset from M4 bolt axis in +X
+STUB_X_OFFSET        = 10.5  # mm — bump centre offset from M4 bolt axis in +X.
+                             # Sized so the bump's outer +X edge reaches the
+                             # cutter bit centre at the slot's max-forward
+                             # position → PURFLING_MIN = 0 (edge-trim capable).
+                             # Bump-to-bit shaft clearance is then 0.39 mm at
+                             # the worst-case slot position (see assertion).
 
 # Body
 BODY_HEIGHT          = 11.0  # mm — body Z extent below the shoe bottom
@@ -83,6 +90,7 @@ SLOT_X_CENTER = 11.125
 SLOT_LEN      = 18.0
 SLOT_W        = 6.5
 BIT_X         = 30.125
+BIT_OD        = 1.3            # mm — smallest router bit we want to support
 # Effective bolt-X range — stem cap (r=3) must fit inside slot cap (r=3.25)
 SLOT_CAP_CENTER_PLUS_X  = SLOT_X_CENTER + (SLOT_LEN - SLOT_W) / 2   # = 16.875
 SLOT_CAP_CENTER_MINUS_X = SLOT_X_CENTER - (SLOT_LEN - SLOT_W) / 2   # = 5.375
@@ -114,6 +122,14 @@ TOTAL_HEIGHT  = BODY_HEIGHT + CARRIAGE_UPSTAND_HEIGHT   # carriage Z extent
 #   bit-to-edge = BIT_X − (bolt_X + STUB_X_OFFSET + STUB_R)
 PURFLING_MIN = BIT_X - (BOLT_X_EFFECTIVE_MAX + STUB_OUTER_X)
 PURFLING_MAX = BIT_X - (BOLT_X_EFFECTIVE_MIN + STUB_OUTER_X)
+
+# Bump-to-bit shaft clearance at the slot's most-forward position.
+# Worst case: bump centre is closest in X to the bit centre.
+BIT_R = BIT_OD / 2
+_BUMP_TO_BIT_DX = BIT_X - (BOLT_X_EFFECTIVE_MAX + STUB_X_OFFSET)
+BUMP_TO_BIT_CLEARANCE = (
+    math.hypot(_BUMP_TO_BIT_DX, STUB_Y) - (STUB_R + BIT_R)
+)
 
 R_MIN = 25.0
 SAGITTA_VARIATION = (STUB_C_TO_C / 2) ** 2 / R_MIN
@@ -162,12 +178,17 @@ assert CARRIAGE_UPSTAND_HEIGHT < SHOE_T, (
     f"CARRIAGE_UPSTAND_HEIGHT {CARRIAGE_UPSTAND_HEIGHT}mm ≥ SHOE_T {SHOE_T}mm "
     f"— upstand would protrude through the top of the shoe"
 )
-# Achievable purfling range covers typical 4–7 mm
-assert PURFLING_MIN <= 5.0, (
-    f"min purfling = {PURFLING_MIN:.2f}mm > 5mm — increase STUB_X_OFFSET"
+# Achievable purfling range covers typical 2–8 mm
+assert PURFLING_MIN <= 2.0, (
+    f"min purfling = {PURFLING_MIN:.2f}mm > 2mm — increase STUB_X_OFFSET"
 )
-assert PURFLING_MAX >= 10.0, (
-    f"max purfling = {PURFLING_MAX:.2f}mm < 10mm — decrease STUB_X_OFFSET"
+assert PURFLING_MAX >= 8.0, (
+    f"max purfling = {PURFLING_MAX:.2f}mm < 8mm — decrease STUB_X_OFFSET"
+)
+# Bumps must not collide with the bit shaft at the slot's max-forward position
+assert BUMP_TO_BIT_CLEARANCE > 0, (
+    f"bump-to-bit clearance = {BUMP_TO_BIT_CLEARANCE:.2f}mm ≤ 0 — "
+    f"bumps would crash into the bit at slot max-forward. Reduce STUB_X_OFFSET."
 )
 # Sagitta sanity
 assert SAGITTA_VARIATION < 1.0, (
@@ -239,6 +260,8 @@ def main():
     print(f"  Sagitta variation at waist (R={R_MIN}mm): {SAGITTA_VARIATION:.2f}mm")
     print(f"  Achievable purfling range: "
           f"{PURFLING_MIN:.2f}mm to {PURFLING_MAX:.2f}mm")
+    print(f"  Bump-to-bit (ø{BIT_OD}) clearance at slot max-forward: "
+          f"{BUMP_TO_BIT_CLEARANCE:.2f}mm")
     print(f"  Required M4 bolt length: ≥ {bolt_span:.1f}mm "
           f"(use M4 × 25 or longer)")
     print(f"Exported slider_carriage.{{step,stl}} to {OUT}")
