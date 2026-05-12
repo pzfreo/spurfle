@@ -149,6 +149,13 @@ UPPER_STEM1_OFFSET = (UPPER_STEM1_LEN - UPPER_STEM1_D) / 2  # stadium shifted -X
 UPPER_TOP_FLANGE_D = 13
 UPPER_TOP_FLANGE_T = 5
 
+# Height (Z) of an optional upstand at the BOTTOM of the slot, occupied by a
+# follower carriage (see m2/slider_carriage.py). If non-zero, the upper_sleeve
+# stem is shortened from the top of the slot down to z=CARRIAGE_UPSTAND_HEIGHT,
+# leaving the bottom of the slot free for the carriage upstand. Both pieces
+# are then rotation-locked by the slot walls.
+CARRIAGE_UPSTAND_HEIGHT = 3.0    # mm — reserved at the bottom of the slot
+
 LOWER_FLANGE_D = 14
 LOWER_FLANGE_T = 1.5
 LOWER_STEM_D = 7.8
@@ -380,7 +387,11 @@ def build_upper_sleeve():
         SlotOverall(UPPER_STEM1_LEN, UPPER_STEM1_D)
     # Shift stadium toward -X so its +X edge aligns with the original circle's +X edge.
     # Extra material goes toward the bolt side; bit-side extent is unchanged.
-    body = Pos(-UPPER_STEM1_OFFSET, 0, 0) * extrude(stem_sk.sketch, amount=SHOE_T)
+    # Stem now occupies z = CARRIAGE_UPSTAND_HEIGHT .. SHOE_T (top of slot only),
+    # leaving the bottom of the slot free for a slider_carriage upstand.
+    body = Pos(-UPPER_STEM1_OFFSET, 0, CARRIAGE_UPSTAND_HEIGHT) * extrude(
+        stem_sk.sketch, amount=SHOE_T - CARRIAGE_UPSTAND_HEIGHT,
+    )
     body += Pos(0, 0, SHOE_T) * Cylinder(
         radius=UPPER_TOP_FLANGE_D / 2, height=UPPER_TOP_FLANGE_T,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
