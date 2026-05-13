@@ -64,18 +64,24 @@ STUB_C_TO_C          = 5.0   # mm — apex-to-apex spacing in Y (bumps touch at 
 STUB_X_OFFSET        = 10.5  # mm — bump centre offset from M4 bolt axis in +X.
                              # Sized so the bump's outer +X edge reaches the
                              # cutter bit centre at the slot's max-forward
-                             # position → PURFLING_MIN = 0 (edge-trim capable).
-                             # Bump-to-bit shaft clearance is then 0.39 mm at
-                             # the worst-case slot position (see assertion).
+                             # position → PURFLING_MIN ≈ 0 (edge-trim capable).
+
+# Carriage upstand — decoupled from the upper_sleeve stem dimensions so this
+# part can fit the slot more tightly without affecting the upper_sleeve.
+# Y is 0.1 mm under slot width (0.05 mm per side) for assembly clearance
+# while keeping rotational play minimal; X is 1 mm longer than the
+# upper_sleeve stem for slightly more rotation resistance.
+CARRIAGE_UPSTAND_WIDTH = 6.4   # mm — slot is 6.5; 0.1 mm total Y play
+CARRIAGE_UPSTAND_LEN   = 10.0  # mm (was 9.0  via UPPER_STEM1_LEN) — +1 mm
 
 # Body
 BODY_HEIGHT          = 11.0  # mm — body Z extent below the shoe bottom
                              # (spans the violin top-plate thickness + rib contact range)
-BODY_BACK_EXTENT     = 6.0   # mm — body extent in −X from the M4 bolt.
-                             # Upstand stadium (length 9, offset −1.5) reaches
-                             # X = −1.5 − 9/2 = −6 at its leftmost point.
-                             # Body's −X edge matches so the upstand sits
-                             # fully on the body — no print supports needed.
+BODY_BACK_EXTENT     = 7.0   # mm — body extent in −X from the M4 bolt.
+                             # Upstand stadium (length 10, offset −1.75) reaches
+                             # X = −1.75 − 10/2 = −6.75 at its leftmost point.
+                             # Body's −X edge ≥ 6.75 so the upstand sits fully
+                             # on the body (no overhang). 7.0 gives 0.25mm margin.
 BODY_HALF_WIDTH      = 5.0   # mm — body half-extent in Y (matches bump outer Y)
 
 # Required minimum +X protrusion of bump past body's +X edge
@@ -91,14 +97,15 @@ SLOT_LEN      = 18.0
 SLOT_W        = 6.5
 BIT_X         = 30.125
 BIT_OD        = 1.3            # mm — smallest router bit we want to support
-# Effective bolt-X range — stem cap (r=3) must fit inside slot cap (r=3.25)
+# Effective bolt-X range — the upstand cap (NOT the upper_sleeve stem cap)
+# is now the constraining stadium because it's tighter in the slot.
 SLOT_CAP_CENTER_PLUS_X  = SLOT_X_CENTER + (SLOT_LEN - SLOT_W) / 2   # = 16.875
 SLOT_CAP_CENTER_MINUS_X = SLOT_X_CENTER - (SLOT_LEN - SLOT_W) / 2   # = 5.375
-STEM_CAP_R = UPPER_STEM1_D / 2                       # = 3
-SLOT_CAP_R = SLOT_W / 2                              # = 3.25
-STEM_CAP_TO_BOLT_X = UPPER_STEM1_LEN - UPPER_STEM1_D # = 3 (X distance bolt to −X stem cap centre)
-BOLT_X_EFFECTIVE_MAX = SLOT_CAP_CENTER_PLUS_X + (SLOT_CAP_R - STEM_CAP_R)         # = 17.125
-BOLT_X_EFFECTIVE_MIN = SLOT_CAP_CENTER_MINUS_X - (SLOT_CAP_R - STEM_CAP_R) + STEM_CAP_TO_BOLT_X  # = 8.125
+UPSTAND_CAP_R = CARRIAGE_UPSTAND_WIDTH / 2                          # = 3.25 (matches slot)
+SLOT_CAP_R    = SLOT_W / 2                                          # = 3.25
+UPSTAND_CAP_TO_BOLT_X = CARRIAGE_UPSTAND_LEN - CARRIAGE_UPSTAND_WIDTH  # = 3.5
+BOLT_X_EFFECTIVE_MAX = SLOT_CAP_CENTER_PLUS_X + (SLOT_CAP_R - UPSTAND_CAP_R)         # = 16.875
+BOLT_X_EFFECTIVE_MIN = SLOT_CAP_CENTER_MINUS_X - (SLOT_CAP_R - UPSTAND_CAP_R) + UPSTAND_CAP_TO_BOLT_X  # = 8.875
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Derived dimensions
@@ -165,10 +172,19 @@ assert BODY_HEIGHT >= 7.0, (
 )
 # Body must extend far enough in −X to fully support the upstand's footprint
 # (so the upstand doesn't overhang into thin air — printable without supports).
-_UPSTAND_MINUS_X = UPPER_STEM1_LEN / 2 + UPPER_STEM1_OFFSET   # = 6.0
+_UPSTAND_OFFSET   = (CARRIAGE_UPSTAND_LEN - CARRIAGE_UPSTAND_WIDTH) / 2   # = 1.75
+_UPSTAND_MINUS_X  = CARRIAGE_UPSTAND_LEN / 2 + _UPSTAND_OFFSET            # = 6.75
 assert BODY_BACK_EXTENT >= _UPSTAND_MINUS_X, (
     f"body −X extent {BODY_BACK_EXTENT}mm < upstand −X reach "
     f"{_UPSTAND_MINUS_X}mm — upstand cap would overhang, requires supports"
+)
+# Upstand must fit in the slot (Y direction; we deliberately allow zero
+# clearance for tight fit, but error if it would actually exceed slot Y).
+assert CARRIAGE_UPSTAND_WIDTH <= SLOT_W, (
+    f"upstand width {CARRIAGE_UPSTAND_WIDTH}mm > slot width {SLOT_W}mm"
+)
+assert CARRIAGE_UPSTAND_LEN <= SLOT_LEN, (
+    f"upstand length {CARRIAGE_UPSTAND_LEN}mm > slot length {SLOT_LEN}mm"
 )
 # Upstand must match the upper_sleeve stem in X/Y (same stadium fits same slot)
 assert CARRIAGE_UPSTAND_HEIGHT > 0, (
@@ -221,10 +237,11 @@ def build_slider_carriage():
         body += bump
 
     # ── Upstand — stadium fitting the bottom of the shoe slot ────────────────
+    # Tighter Y than the upper_sleeve stem (no clearance to slot walls) and
+    # 1mm longer in X — eliminates rotational play.
     with BuildSketch() as sk:
-        SlotOverall(UPPER_STEM1_LEN, UPPER_STEM1_D)
-    # Same X offset as the upper_sleeve stem (bolt at +X cap centre)
-    upstand = Pos(-UPPER_STEM1_OFFSET, 0, 0) * extrude(
+        SlotOverall(CARRIAGE_UPSTAND_LEN, CARRIAGE_UPSTAND_WIDTH)
+    upstand = Pos(-_UPSTAND_OFFSET, 0, 0) * extrude(
         sk.sketch, amount=CARRIAGE_UPSTAND_HEIGHT,
     )
     body += upstand
@@ -255,8 +272,9 @@ def main():
     print(f"        + 2 half-circle bumps (ø{STUB_OD}, full height) at "
           f"X=+{STUB_X_OFFSET}, Y=±{STUB_Y}")
     print(f"        bumps protrude {STUB_OUTER_X - BODY_X_FRONT:.1f}mm past body +X edge")
-    print(f"  Upstand on top: stadium {UPPER_STEM1_LEN}×{UPPER_STEM1_D}, "
-          f"{CARRIAGE_UPSTAND_HEIGHT}mm tall — rotation-locked by slot bottom")
+    print(f"  Upstand on top: stadium {CARRIAGE_UPSTAND_LEN}×{CARRIAGE_UPSTAND_WIDTH}, "
+          f"{CARRIAGE_UPSTAND_HEIGHT}mm tall — "
+          f"{SLOT_W - CARRIAGE_UPSTAND_WIDTH:.1f}mm Y play, rotation-locked")
     print(f"  Sagitta variation at waist (R={R_MIN}mm): {SAGITTA_VARIATION:.2f}mm")
     print(f"  Achievable purfling range: "
           f"{PURFLING_MIN:.2f}mm to {PURFLING_MAX:.2f}mm")
