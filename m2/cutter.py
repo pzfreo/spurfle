@@ -154,7 +154,14 @@ UPPER_TOP_FLANGE_T = 5
 # stem is shortened from the top of the slot down to z=CARRIAGE_UPSTAND_HEIGHT,
 # leaving the bottom of the slot free for the carriage upstand. Both pieces
 # are then rotation-locked by the slot walls.
-CARRIAGE_UPSTAND_HEIGHT = 3.0    # mm — reserved at the bottom of the slot
+CARRIAGE_UPSTAND_HEIGHT = 8.0    # mm — reserved at the bottom of the slot
+                                 # (was 3.0 — taller now to give the carriage
+                                 # upstand more leverage against the slot
+                                 # walls, reducing rotational play at the
+                                 # bumps. The upper_sleeve stem becomes
+                                 # SHOE_T − this = 3 mm — just enough to keep
+                                 # the captive nut from spinning during bolt
+                                 # tightening.)
 
 LOWER_FLANGE_D = 14
 LOWER_FLANGE_T = 1.5
