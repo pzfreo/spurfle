@@ -68,11 +68,10 @@ STUB_X_OFFSET        = 10.5  # mm — bump centre offset from M4 bolt axis in +X
 
 # Carriage upstand — decoupled from the upper_sleeve stem dimensions so this
 # part can fit the slot more tightly without affecting the upper_sleeve.
-# Y is 0.1 mm under slot width (0.05 mm per side) for assembly clearance
-# while keeping rotational play minimal; X is 1 mm longer than the
-# upper_sleeve stem for slightly more rotation resistance.
-CARRIAGE_UPSTAND_WIDTH = 6.4   # mm — slot is 6.5; 0.1 mm total Y play
-CARRIAGE_UPSTAND_LEN   = 10.0  # mm (was 9.0  via UPPER_STEM1_LEN) — +1 mm
+# Y matches slot width exactly — zero designed Y play. If the print is
+# binding, sand the upstand sides until it slides freely.
+CARRIAGE_UPSTAND_WIDTH = 6.5   # mm — same as slot width; hand-fit if needed
+CARRIAGE_UPSTAND_LEN   = 10.0  # mm (was 9.0 via UPPER_STEM1_LEN) — +1 mm
 
 # Body
 BODY_HEIGHT          = 11.0  # mm — body Z extent below the shoe bottom
