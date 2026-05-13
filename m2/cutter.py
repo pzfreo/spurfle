@@ -95,6 +95,12 @@ SURROUND_LEN = 14                # X extent of the surround region
 SURROUND_OVERLAP = 2             # snout rect extends back into shoe body by this much so the union is a solid weld (prints as one object)
 SURROUND_FILLET_OUT = 3.4        # bottom outer perimeter of snout (hard limit: SURROUND_WALL − bit_r − inner_fillet ≈ 3.5)
 SURROUND_FILLET_IN = 0.5         # bit hole bottom edge
+SHOE_FRONT_FILLET_R = 7.0        # mm — vertical fillet at the front shoulder
+                                 # corners of the shoe (where the wide body
+                                 # steps down to the narrow snout). Smooths
+                                 # the corners so they don't catch on the
+                                 # violin edge as the bearing navigates
+                                 # concave/convex perimeter regions.
 
 # Bearing channel
 SLOT_LEN = 18                    # gives bearing-edge-to-bit-edge gap of 1.25–13.25 mm; cantilever = 19.25 + SLOT_LEN
@@ -332,6 +338,20 @@ def build_shoe():
         height=SURROUND_HEIGHT + 0.2,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
+
+    # Fillet the front shoulder vertical edges — where the wide body steps
+    # down to the narrow snout. Vertical edges at (X ≈ surround_x_start,
+    # Y ≈ ±SHOE_W/2). Picked by being Z-aligned, near the cut X, and at
+    # outer Y. The fillet's bottom arcs (radius SHOE_FRONT_FILLET_R) are
+    # excluded from the snout bottom-perimeter fillet below because that
+    # filter rejects circles with radius < SURROUND_BOSS_D/2 − 0.5 = 7.5.
+    shoulder_edges = [
+        e for e in shoe.edges().filter_by(Axis.Z)
+        if abs(e.center().X - surround_x_start) < 1.0
+        and abs(e.center().Y) > 10.0
+    ]
+    if shoulder_edges:
+        shoe = fillet(shoulder_edges, radius=SHOE_FRONT_FILLET_R)
 
     # Fillet the outer bottom perimeter of the snout at z=0.
     # Keep z=0 edges in the snout region (x > surround_x_start), skip the
