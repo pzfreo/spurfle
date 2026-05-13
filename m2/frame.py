@@ -68,10 +68,19 @@ PLATE_W   = 70.0   # mm — wider than face plate insert pattern (M6 at ±27 + c
 PLATE_GAP = 0.5    # mm — air gap between plate body inner face and mount face
                    # (plate body sits clear of mount; only the boss touches the bearing)
 
-# D-shape plate — flat front, half-circle back
+# D-shape plate — flat front, half-circle back (used by top plate)
 PLATE_Y_BACK_OFFSET  = 13.5  # mm — plate back past standoff A; sized so the ø12
                              # axial counterbore has ≥7mm wall thickness to the
                              # back arc of the D-shape
+
+# Bottom plate alternate shape — wide front rectangle + narrow back stadium.
+# The narrow back wraps the axial M6 insert with minimum FDM wall, dramatically
+# shrinking the swept envelope past the bore axis (less mount interference).
+# Wide front matches PLATE_W so the 4× M6 wing-attach inserts are supported.
+BOT_PLATE_NARROW_W  = 15.0   # mm — narrow stadium width (= ø12 axial-bolt
+                             # counterbore + 2×1.5 mm FDM_WALL_PREF margin)
+BOT_PLATE_WIDE_LEN  = 10.0   # mm — wide front section length in Y (covers
+                             # the M6 wing-attach insert depth = INSERT_LENGTH)
 
 SLEEVE_OD  = 9.9   # mm — slip fit on the 6800 bearing bore (ø10 nominal)
 SLEEVE_BOLT_CLEARANCE = 6.5   # mm — M6 clearance through the sleeve
@@ -160,6 +169,10 @@ PLATE_CENTRE_Y     = (PLATE_Y_FRONT + PLATE_Y_BACK) / 2
 # D-shape geometry: flat front + half-circle back of radius PLATE_W/2.
 # Cap centre at Y where rectangle meets the half-circle.
 PLATE_Y_CAP_CENTRE = PLATE_Y_BACK - PLATE_W / 2                  # = -45 mm
+
+# Bottom plate alternate shape — derived dimensions
+BOT_PLATE_Y_STEP   = PLATE_Y_FRONT + BOT_PLATE_WIDE_LEN          # = -44.5 (step Y)
+BOT_PLATE_Y_BACK   = HOLE_Y + BOT_PLATE_NARROW_W / 2             # = -9 (back edge)
 
 # Z stack
 PLATE_INNER_Z_TOP    =  MOUNT_H/2 + PLATE_GAP                 # top plate bottom face
@@ -304,6 +317,19 @@ assert _AXIAL_CLEARANCE_REMAINING >= FDM_WALL_MIN, (
 assert PLATE_W/2 - FACEPLATE_ATTACH_X >= _INSERT_R + FDM_WALL_PREF, (
     f"plate too narrow for M6 attach insert at X=±{FACEPLATE_ATTACH_X}"
 )
+# Bottom plate alternate-shape assertions
+assert BOT_PLATE_NARROW_W / 2 >= M6_HEAD_OD / 2 + FDM_WALL_PREF, (
+    f"BOT_PLATE_NARROW_W {BOT_PLATE_NARROW_W}mm cap radius "
+    f"({BOT_PLATE_NARROW_W/2}) < axial counterbore + {FDM_WALL_PREF}mm wall"
+)
+assert BOT_PLATE_NARROW_W / 2 >= BOSS_OD / 2, (
+    f"BOT_PLATE_NARROW_W cap radius {BOT_PLATE_NARROW_W/2}mm < boss radius "
+    f"{BOSS_OD/2}mm — boss wouldn't fit in narrow stadium"
+)
+assert BOT_PLATE_WIDE_LEN >= INSERT_LENGTH, (
+    f"BOT_PLATE_WIDE_LEN {BOT_PLATE_WIDE_LEN}mm < INSERT_LENGTH "
+    f"{INSERT_LENGTH}mm — wing-attach insert extends past wide section"
+)
 assert FACEPLATE_TO_MOUNT_CLEARANCE > 0, (
     f"face plate intersects mount swept envelope by "
     f"{-FACEPLATE_TO_MOUNT_CLEARANCE:.2f}mm at ±{ROTATION_HALF_ANGLE}° swing"
@@ -318,7 +344,7 @@ OUT = Path(__file__).parent / "out"
 
 def _build_plate_sketch():
     """D-shape: flat front (mates with face plate) + half-circle back of
-    radius PLATE_W/2.  No sharp corners at the back."""
+    radius PLATE_W/2.  No sharp corners at the back.  Used by the top plate."""
     with BuildSketch() as sk:
         with BuildLine():
             Line((-PLATE_W/2, PLATE_Y_FRONT), ( PLATE_W/2, PLATE_Y_FRONT))
@@ -329,6 +355,35 @@ def _build_plate_sketch():
                 (-PLATE_W/2, PLATE_Y_CAP_CENTRE),
             )
             Line((-PLATE_W/2, PLATE_Y_CAP_CENTRE), (-PLATE_W/2, PLATE_Y_FRONT))
+        make_face()
+    return sk.sketch
+
+
+def _build_bottom_plate_sketch():
+    """Bottom plate: wide front rectangle (for M6 wing-attach inserts) +
+    diagonal taper to a small half-circle around the bore axis.  No sharp
+    internal corners — the diagonal eliminates the step's stress
+    concentration.  Swept envelope past the pivot is just the narrow
+    back-cap radius, well clear of the mount.
+    """
+    nw = BOT_PLATE_NARROW_W / 2
+    with BuildSketch() as sk:
+        with BuildLine():
+            # Wide front section
+            Line((-PLATE_W/2, PLATE_Y_FRONT), ( PLATE_W/2, PLATE_Y_FRONT))
+            Line(( PLATE_W/2, PLATE_Y_FRONT), ( PLATE_W/2, BOT_PLATE_Y_STEP))
+            # Diagonal from wide corner to narrow back cap at the bore axis
+            Line(( PLATE_W/2, BOT_PLATE_Y_STEP), ( nw, HOLE_Y))
+            # Half-circle cap around the bore axis (back end)
+            ThreePointArc(
+                ( nw, HOLE_Y),
+                ( 0, BOT_PLATE_Y_BACK),
+                (-nw, HOLE_Y),
+            )
+            # Mirror diagonal on the other side
+            Line((-nw, HOLE_Y), (-PLATE_W/2, BOT_PLATE_Y_STEP))
+            # Left side of wide section back to front
+            Line((-PLATE_W/2, BOT_PLATE_Y_STEP), (-PLATE_W/2, PLATE_Y_FRONT))
         make_face()
     return sk.sketch
 
@@ -457,7 +512,7 @@ def build_bottom_plate():
     """Bottom plate: rectangular body + bearing boss at standoff A,
     M6 insert in TOP face for sleeve A bolt,
     M6 inserts in FRONT face for face plate attach."""
-    body = Pos(0, 0, PLATE_OUTER_Z_BOTTOM) * extrude(_build_plate_sketch(), PLATE_T)
+    body = Pos(0, 0, PLATE_OUTER_Z_BOTTOM) * extrude(_build_bottom_plate_sketch(), PLATE_T)
     boss = Pos(SLEEVE_A_X, SLEEVE_A_Y, PLATE_INNER_Z_BOTTOM) * Cylinder(
         BOSS_OD/2, BOSS_DEPTH,
         align=(Align.CENTER, Align.CENTER, Align.MIN),
