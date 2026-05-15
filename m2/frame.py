@@ -81,6 +81,8 @@ BOT_PLATE_NARROW_W  = 15.0   # mm — narrow stadium width (= ø12 axial-bolt
                              # counterbore + 2×1.5 mm FDM_WALL_PREF margin)
 BOT_PLATE_WIDE_LEN  = 10.0   # mm — wide front section length in Y (covers
                              # the M6 wing-attach insert depth = INSERT_LENGTH)
+BOT_PLATE_D_STRAIGHT = 10.0  # mm — parallel narrow section before the bore-axis arc;
+                              # diagonal ends this far before HOLE_Y, giving a longer D
 
 SLEEVE_OD  = 9.9   # mm — slip fit on the 6800 bearing bore (ø10 nominal)
 SLEEVE_BOLT_CLEARANCE = 6.5   # mm — M6 clearance through the sleeve
@@ -101,6 +103,10 @@ INSERT_LENGTH    = 10.0   # mm — user's M6 inserts are 10mm
 # melted plastic grips the brass.  Standard practice for M5/M6 with brass
 # heat-set inserts (Ruthex, McMaster) is 0.1–0.2 mm reduction.
 HEATSET_PREBORE_REDUCTION = 0.15  # mm — pre-bore_ø = insert_OD − this
+# FDM hole shrinkage compensation: vertical holes print smaller than modelled.
+# Measured bottom plate: 6.8 mm printed vs 7.85 mm modelled → 1.05 mm under.
+# Target printed ø ≈ insert_OD − PREBORE_REDUCTION, so add 1.05 mm to model.
+HEATSET_SHRINK_COMP = 0.0         # mm — added to pre-bore to compensate FDM shrinkage (tune from measurement)
 HEATSET_CHAMFER_DEPTH     = 0.5   # mm — entry chamfer depth (guides insert in)
 HEATSET_CHAMFER_WIDTH     = 0.5   # mm — radial widening at the entry
 # Relief bore behind the insert so displaced plastic has somewhere to go
@@ -171,7 +177,8 @@ PLATE_CENTRE_Y     = (PLATE_Y_FRONT + PLATE_Y_BACK) / 2
 PLATE_Y_CAP_CENTRE = PLATE_Y_BACK - PLATE_W / 2                  # = -45 mm
 
 # Bottom plate alternate shape — derived dimensions
-BOT_PLATE_Y_STEP   = PLATE_Y_FRONT + BOT_PLATE_WIDE_LEN          # = -44.5 (step Y)
+BOT_PLATE_Y_STEP      = PLATE_Y_FRONT + BOT_PLATE_WIDE_LEN        # = -44.5 (step Y)
+BOT_PLATE_Y_DIAG_END  = HOLE_Y - BOT_PLATE_D_STRAIGHT             # = -26.5 (diagonal end / narrow start)
 BOT_PLATE_Y_BACK   = HOLE_Y + BOT_PLATE_NARROW_W / 2             # = -9 (back edge)
 
 # Z stack
@@ -361,10 +368,9 @@ def _build_plate_sketch():
 
 def _build_bottom_plate_sketch():
     """Bottom plate: wide front rectangle (for M6 wing-attach inserts) +
-    diagonal taper to a small half-circle around the bore axis.  No sharp
-    internal corners — the diagonal eliminates the step's stress
-    concentration.  Swept envelope past the pivot is just the narrow
-    back-cap radius, well clear of the mount.
+    diagonal taper + parallel narrow D section around the bore axis.
+    BOT_PLATE_D_STRAIGHT controls how long the parallel narrow section is
+    before the bore-axis arc — longer = more material around the axle.
     """
     nw = BOT_PLATE_NARROW_W / 2
     with BuildSketch() as sk:
@@ -372,16 +378,19 @@ def _build_bottom_plate_sketch():
             # Wide front section
             Line((-PLATE_W/2, PLATE_Y_FRONT), ( PLATE_W/2, PLATE_Y_FRONT))
             Line(( PLATE_W/2, PLATE_Y_FRONT), ( PLATE_W/2, BOT_PLATE_Y_STEP))
-            # Diagonal from wide corner to narrow back cap at the bore axis
-            Line(( PLATE_W/2, BOT_PLATE_Y_STEP), ( nw, HOLE_Y))
+            # Diagonal from wide corner to start of narrow D section
+            Line(( PLATE_W/2, BOT_PLATE_Y_STEP), ( nw, BOT_PLATE_Y_DIAG_END))
+            # Parallel narrow sides running back to the bore axis
+            Line(( nw, BOT_PLATE_Y_DIAG_END), ( nw, HOLE_Y))
             # Half-circle cap around the bore axis (back end)
             ThreePointArc(
                 ( nw, HOLE_Y),
                 ( 0, BOT_PLATE_Y_BACK),
                 (-nw, HOLE_Y),
             )
-            # Mirror diagonal on the other side
-            Line((-nw, HOLE_Y), (-PLATE_W/2, BOT_PLATE_Y_STEP))
+            # Mirror narrow side and diagonal
+            Line((-nw, HOLE_Y), (-nw, BOT_PLATE_Y_DIAG_END))
+            Line((-nw, BOT_PLATE_Y_DIAG_END), (-PLATE_W/2, BOT_PLATE_Y_STEP))
             # Left side of wide section back to front
             Line((-PLATE_W/2, BOT_PLATE_Y_STEP), (-PLATE_W/2, PLATE_Y_FRONT))
         make_face()
@@ -396,7 +405,7 @@ def _heatset_pocket_z_down(insert_od, length, x, y, z_face, relief_d, relief_dep
     Returns a SHAPE to subtract from the parent plate."""
     if relief_depth is None:
         relief_depth = HEATSET_RELIEF_DEPTH
-    pre_bore_r = (insert_od - HEATSET_PREBORE_REDUCTION) / 2
+    pre_bore_r = (insert_od - HEATSET_PREBORE_REDUCTION + HEATSET_SHRINK_COMP) / 2
     # Main bore
     bore = Pos(x, y, z_face - length) * Cylinder(
         pre_bore_r, length + 0.1,
@@ -423,7 +432,7 @@ def _heatset_pocket_y_in(insert_od, length, x, y_face, z, relief_d, relief_depth
     Returns a SHAPE to subtract from the parent plate."""
     if relief_depth is None:
         relief_depth = HEATSET_RELIEF_DEPTH
-    pre_bore_r = (insert_od - HEATSET_PREBORE_REDUCTION) / 2
+    pre_bore_r = (insert_od - HEATSET_PREBORE_REDUCTION + HEATSET_SHRINK_COMP) / 2
     # Main bore
     bore = Pos(x, y_face - 0.05, z) * Rotation((-90, 0, 0)) * Cylinder(
         pre_bore_r, length + 0.1,
